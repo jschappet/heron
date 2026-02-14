@@ -1,0 +1,43 @@
+debug=true
+environment="development" 
+# Production
+
+templates="./templates/"
+
+[database]
+url = "local_database.db"
+migration = "./migrations/"
+
+[email]
+verify_token_subject="Verify Your ReVillage Account"
+smtp_from_email="ReVillage Society <noreply@revillagesociety.org>"
+verify_token_text="Hello {},\n\nPlease verify your account:\n{}"
+base_url="https://dev.revillagesociety.org"
+reset_password_subject="Password Reset Token"
+
+
+[smtp]
+server="smtp.revillagesociety.org"
+username="smtp_username"
+password="smtp_password"
+port=456
+
+[gpt]
+url="https://api.openai.com/v1/chat/completions"
+api_key="REPLACE_ME"
+max_tokens=500
+model="gpt-4o-mini"
+temperature=0.7
+
+[web_config]
+host="localhost"
+port="8582"
+context_path = "/"
+login_url = "/tracker/app/login"
+cookie_key = "REPLACE_ME"
+
+
+[twilio]
+account_sid="REPLACE_ME"
+auth_token="REPLACE_ME"
+phone_number="+1REPLACE_ME"

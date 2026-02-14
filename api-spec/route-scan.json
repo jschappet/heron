@@ -1,0 +1,632 @@
+[
+  {
+    "fnName": "register_new_user",
+    "found": true,
+    "method": "POST",
+    "path": "/register",
+    "location": "src/routes/authentication.rs:27"
+  },
+  {
+    "fnName": "verify_account",
+    "found": true,
+    "method": "GET",
+    "path": "/token/{token}",
+    "location": "src/routes/authentication.rs:60"
+  },
+  {
+    "fnName": "register_new_user_off",
+    "found": true,
+    "method": "POST",
+    "path": "/register1",
+    "location": "src/routes/authentication.rs:88"
+  },
+  {
+    "fnName": "login",
+    "found": true,
+    "method": "POST",
+    "path": "/login",
+    "location": "src/routes/authentication.rs:117"
+  },
+  {
+    "fnName": "logout",
+    "found": true,
+    "method": "POST",
+    "path": "/logout",
+    "location": "src/routes/authentication.rs:146"
+  },
+  {
+    "fnName": "create_user_api",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/users_api.rs:24"
+  },
+  {
+    "fnName": "get_users_page",
+    "found": true,
+    "method": "GET",
+    "path": "/users/page",
+    "location": "src/routes/users_api.rs:37"
+  },
+  {
+    "fnName": "get_users_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/users_api.rs:56"
+  },
+  {
+    "fnName": "get_public_users_api",
+    "found": true,
+    "method": "GET",
+    "path": "/public_profile",
+    "location": "src/routes/users_api.rs:65"
+  },
+  {
+    "fnName": "get_public_user_api",
+    "found": true,
+    "method": "GET",
+    "path": "/public_profile/user/{user_id}",
+    "location": "src/routes/users_api.rs:87"
+  },
+  {
+    "fnName": "get_user_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{user_id}",
+    "location": "src/routes/users_api.rs:99"
+  },
+  {
+    "fnName": "update_user_api",
+    "found": true,
+    "method": "PUT",
+    "path": "/{user_id}",
+    "location": "src/routes/users_api.rs:108"
+  },
+  {
+    "fnName": "delete_user_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/{user_id}",
+    "location": "src/routes/users_api.rs:126"
+  },
+  {
+    "fnName": "update_user_details_api",
+    "found": true,
+    "method": "POST",
+    "path": "/details",
+    "location": "src/routes/users_api.rs:136"
+  },
+  {
+    "fnName": "get_reset_password_page",
+    "found": true,
+    "method": "GET",
+    "path": "/reset-password/{token}",
+    "location": "src/routes/users_api.rs:166"
+  },
+  {
+    "fnName": "reset_password_token",
+    "found": true,
+    "method": "POST",
+    "path": "/reset-password",
+    "location": "src/routes/users_api.rs:194"
+  },
+  {
+    "fnName": "set_password_new",
+    "found": true,
+    "method": "POST",
+    "path": "/set-password",
+    "location": "src/routes/users_api.rs:240"
+  },
+  {
+    "fnName": "get_config_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/config.rs:27"
+  },
+  {
+    "fnName": "online",
+    "found": true,
+    "method": "GET",
+    "path": "/ONLINE",
+    "location": "src/routes/config.rs:64"
+  },
+  {
+    "fnName": "ping",
+    "found": true,
+    "method": "GET",
+    "path": "/ping",
+    "location": "src/routes/config.rs:88"
+  },
+  {
+    "fnName": "create_role_api",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/roles_api.rs:7"
+  },
+  {
+    "fnName": "get_roles_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/roles_api.rs:19"
+  },
+  {
+    "fnName": "get_role_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{id}",
+    "location": "src/routes/roles_api.rs:28"
+  },
+  {
+    "fnName": "update_role_api",
+    "found": true,
+    "method": "PUT",
+    "path": "/{id}",
+    "location": "src/routes/roles_api.rs:37"
+  },
+  {
+    "fnName": "delete_role_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/{id}",
+    "location": "src/routes/roles_api.rs:50"
+  },
+  {
+    "fnName": "profile_json",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/profile.rs:17"
+  },
+  {
+    "fnName": "profile_offers_json",
+    "found": true,
+    "method": "GET",
+    "path": "/offers",
+    "location": "src/routes/profile.rs:67"
+  },
+  {
+    "fnName": "profile_completed_json",
+    "found": true,
+    "method": "GET",
+    "path": "/completed",
+    "location": "src/routes/profile.rs:80"
+  },
+  {
+    "fnName": "create_membership_api",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/memberships_api.rs:9"
+  },
+  {
+    "fnName": "get_memberships_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/memberships_api.rs:19"
+  },
+  {
+    "fnName": "get_memberships_for_user_api",
+    "found": true,
+    "method": "GET",
+    "path": "/user/{id}",
+    "location": "src/routes/memberships_api.rs:31"
+  },
+  {
+    "fnName": "delete_membership_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/{id}",
+    "location": "src/routes/memberships_api.rs:41"
+  },
+  {
+    "fnName": "create_offer_api",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/offers_api.rs:17"
+  },
+  {
+    "fnName": "get_offer_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{id}",
+    "location": "src/routes/offers_api.rs:32"
+  },
+  {
+    "fnName": "get_offers_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/offers_api.rs:42"
+  },
+  {
+    "fnName": "get_user_offers_api",
+    "found": true,
+    "method": "GET",
+    "path": "/user/{input_uid}/offers",
+    "location": "src/routes/offers_api.rs:49"
+  },
+  {
+    "fnName": "update_offer_api",
+    "found": true,
+    "method": "PUT",
+    "path": "/{id}",
+    "location": "src/routes/offers_api.rs:59"
+  },
+  {
+    "fnName": "delete_offer_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/{id}",
+    "location": "src/routes/offers_api.rs:71"
+  },
+  {
+    "fnName": "create_wants_to_contribute",
+    "found": true,
+    "method": "POST",
+    "path": "/wants_to_help",
+    "location": "src/routes/offers_api.rs:91"
+  },
+  {
+    "fnName": "create_contribute_event",
+    "found": true,
+    "method": "POST",
+    "path": "/help_events",
+    "location": "src/routes/offers_api.rs:117"
+  },
+  {
+    "fnName": "ping",
+    "found": true,
+    "method": "GET",
+    "path": "/doc_schema",
+    "location": "src/routes/drafts_api.rs:27"
+  },
+  {
+    "fnName": "create_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/drafts_api.rs:33"
+  },
+  {
+    "fnName": "get_drafts_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/drafts_api.rs:92"
+  },
+  {
+    "fnName": "get_draft_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{id}",
+    "location": "src/routes/drafts_api.rs:137"
+  },
+  {
+    "fnName": "update_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}",
+    "location": "src/routes/drafts_api.rs:147"
+  },
+  {
+    "fnName": "delete_draft_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/{id}",
+    "location": "src/routes/drafts_api.rs:167"
+  },
+  {
+    "fnName": "submit_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/submit",
+    "location": "src/routes/drafts_api.rs:177"
+  },
+  {
+    "fnName": "request_changes_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/request_changes",
+    "location": "src/routes/drafts_api.rs:189"
+  },
+  {
+    "fnName": "approve_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/approve",
+    "location": "src/routes/drafts_api.rs:221"
+  },
+  {
+    "fnName": "deploy_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/deploy",
+    "location": "src/routes/drafts_api.rs:244"
+  },
+  {
+    "fnName": "get_draft_md_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{id}/md",
+    "location": "src/routes/drafts_api.rs:394"
+  },
+  {
+    "fnName": "bulk_approve",
+    "found": true,
+    "method": "POST",
+    "path": "/bulk/approve",
+    "location": "src/routes/drafts_api.rs:409"
+  },
+  {
+    "fnName": "get_ratings",
+    "found": true,
+    "method": "GET",
+    "path": "/all",
+    "location": "src/routes/ratings_api.rs:4"
+  },
+  {
+    "fnName": "save_ratings",
+    "found": true,
+    "method": "POST",
+    "path": "/save",
+    "location": "src/routes/ratings_api.rs:31"
+  },
+  {
+    "fnName": "get_summaries_array",
+    "found": true,
+    "method": "GET",
+    "path": "/summary/array",
+    "location": "src/routes/ratings_api.rs:80"
+  },
+  {
+    "fnName": "rebuild_summary_route",
+    "found": true,
+    "method": "POST",
+    "path": "/rebuild-summary",
+    "location": "src/routes/ratings_api.rs:98"
+  },
+  {
+    "fnName": "get_summaries",
+    "found": true,
+    "method": "GET",
+    "path": "/summary/all",
+    "location": "src/routes/ratings_api.rs:111"
+  },
+  {
+    "fnName": "create_event_api",
+    "found": true,
+    "method": "POST",
+    "path": "/events",
+    "location": "src/routes/events_api.rs:10"
+  },
+  {
+    "fnName": "get_events_api",
+    "found": true,
+    "method": "GET",
+    "path": "/events",
+    "location": "src/routes/events_api.rs:23"
+  },
+  {
+    "fnName": "get_event_api",
+    "found": true,
+    "method": "GET",
+    "path": "/event/{event_id}",
+    "location": "src/routes/events_api.rs:32"
+  },
+  {
+    "fnName": "update_event_api",
+    "found": true,
+    "method": "PUT",
+    "path": "/event/{event_id}",
+    "location": "src/routes/events_api.rs:44"
+  },
+  {
+    "fnName": "delete_event_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/event/{event_id}",
+    "location": "src/routes/events_api.rs:57"
+  },
+  {
+    "fnName": "get_pending_registrations_html",
+    "found": true,
+    "method": "GET",
+    "path": "/events/{event_id}/pending-registrations",
+    "location": "src/routes/events_api.rs:79"
+  },
+  {
+    "fnName": "upload",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/uploads.rs:107"
+  },
+  {
+    "fnName": "submit_weekly_answers",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/weekly_answers.rs:156"
+  },
+  {
+    "fnName": "get_answers",
+    "found": true,
+    "method": "GET",
+    "path": "/question/{uuid}/answers",
+    "location": "src/routes/weekly_answers.rs:219"
+  },
+  {
+    "fnName": "submit_summary",
+    "found": true,
+    "method": "POST",
+    "path": "/question/{uuid}/summary",
+    "location": "src/routes/weekly_answers.rs:231"
+  },
+  {
+    "fnName": "get_summary",
+    "found": true,
+    "method": "GET",
+    "path": "/question/{uuid}/summary",
+    "location": "src/routes/weekly_answers.rs:245"
+  },
+  {
+    "fnName": "get_all_summaries",
+    "found": true,
+    "method": "GET",
+    "path": "/question-summaries/all",
+    "location": "src/routes/weekly_answers.rs:273"
+  },
+  {
+    "fnName": "get_all_answers",
+    "found": true,
+    "method": "GET",
+    "path": "/all",
+    "location": "src/routes/weekly_answers.rs:285"
+  },
+  {
+    "fnName": "upload_questions",
+    "found": true,
+    "method": "POST",
+    "path": "/questions/upload",
+    "location": "src/routes/weekly_answers.rs:348"
+  },
+  {
+    "fnName": "post_question_summary",
+    "found": true,
+    "method": "POST",
+    "path": "/question-summaries/update",
+    "location": "src/routes/weekly_answers.rs:404"
+  },
+  {
+    "fnName": "create_ticket_api",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/ticket_api.rs:10"
+  },
+  {
+    "fnName": "get_tickets_for_event_api",
+    "found": true,
+    "method": "GET",
+    "path": "/event/{new_event_id}",
+    "location": "src/routes/ticket_api.rs:24"
+  },
+  {
+    "fnName": "get_tickets_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/ticket_api.rs:36"
+  },
+  {
+    "fnName": "get_ticket_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{ticket_id}",
+    "location": "src/routes/ticket_api.rs:45"
+  },
+  {
+    "fnName": "update_ticket_api",
+    "found": true,
+    "method": "PUT",
+    "path": "/{ticket_id}",
+    "location": "src/routes/ticket_api.rs:57"
+  },
+  {
+    "fnName": "generate_qr_code",
+    "found": true,
+    "method": "GET",
+    "path": "/{ticket_id}/qr",
+    "location": "src/routes/ticket_api.rs:72"
+  },
+  {
+    "fnName": "delete_ticket_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/{ticket_id}",
+    "location": "src/routes/ticket_api.rs:96"
+  },
+  {
+    "fnName": "assign_ticket",
+    "found": true,
+    "method": "POST",
+    "path": "/assign-ticket",
+    "location": "src/routes/ticket_api.rs:116"
+  },
+  {
+    "fnName": "subscribe",
+    "found": true,
+    "method": "POST",
+    "path": "/subscribe",
+    "location": "src/routes/mailing_list.rs:91"
+  },
+  {
+    "fnName": "confirm",
+    "found": true,
+    "method": "GET",
+    "path": "/confirm/{token}",
+    "location": "src/routes/mailing_list.rs:154"
+  },
+  {
+    "fnName": "unsubscribe",
+    "found": true,
+    "method": "GET",
+    "path": "/unsubscribe/{token}",
+    "location": "src/routes/mailing_list.rs:174"
+  },
+  {
+    "fnName": "list_subscribers",
+    "found": true,
+    "method": "GET",
+    "path": "/mailing_list",
+    "location": "src/routes/mailing_list.rs:193"
+  },
+  {
+    "fnName": "create_contribute_event",
+    "found": true,
+    "method": "POST",
+    "path": "/efforts",
+    "location": "src/routes/contribution_event.rs:25"
+  },
+  {
+    "fnName": "_create_contribute_event",
+    "found": true,
+    "method": "POST",
+    "path": "/efforts_off",
+    "location": "src/routes/contribution_event.rs:39"
+  },
+  {
+    "fnName": "get_sms_replies",
+    "found": true,
+    "method": "GET",
+    "path": "/sms_replies",
+    "location": "src/routes/twillio.rs:87"
+  },
+  {
+    "fnName": "receive_sms_reply",
+    "found": true,
+    "method": "POST",
+    "path": "/webhook",
+    "location": "src/routes/twillio.rs:104"
+  },
+  {
+    "fnName": "send_sms_api",
+    "found": true,
+    "method": "POST",
+    "path": "/send_sms",
+    "location": "src/routes/twillio.rs:176"
+  },
+  {
+    "fnName": "get_sms_replies",
+    "found": true,
+    "method": "GET",
+    "path": "/sms_replies",
+    "location": "src/routes/twillio_admin.rs:23"
+  }
+]

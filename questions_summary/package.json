@@ -1,0 +1,18 @@
+{
+  "name": "questions_summary",
+  "version": "1.0.0",
+  "description": "Fetch questions/answers and get AI to summerize them",
+  "license": "ISC",
+  "author": "Schappet <me@schappet.com>",
+  "type": "commonjs",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "summerize": "node script.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.8.1"
+  }
+}

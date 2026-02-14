@@ -1,0 +1,2 @@
+-- This file should undo anything in `up.sql`
+-- Remove user_details from users (SQLite cannot DROP column directly)

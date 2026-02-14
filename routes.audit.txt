@@ -1,0 +1,154 @@
+
+📄 src/routes/authentication.rs
+  POST /api/register → service
+  GET /api/token/{token} → service
+  POST /api/register1 → service
+  POST /api/login → service
+  POST /api/logout → service
+  service(register_new_user)
+  service(login)
+  service(logout)
+  service(verify_account)
+
+📄 src/routes/config.rs
+  GET /config → service
+  GET /ONLINE → service
+  service(get_config_api)
+  service(online)
+
+📄 src/routes/drafts_api.rs
+  POST /drafts → service
+  GET /drafts/ping → service
+  GET /drafts → service
+  GET /drafts/{id} → service
+  POST /drafts/{id} → service
+  DELETE /drafts/{id} → service
+  POST /drafts/{id}/submit → service
+  POST /drafts/{id}/request_changes → service
+  POST /drafts/{id}/approve → service
+  POST /drafts/{id}/deploy → service
+  GET /drafts/{id}/md → service
+  POST /drafts/bulk/approve → service
+  service(create_draft_api)
+  service(get_drafts_api)
+  service(bulk_approve)
+  service(get_draft_api)
+  service(update_draft_api)
+  service(delete_draft_api)
+  service(submit_draft_api)
+  service(request_changes_api)
+  service(approve_draft_api)
+  service(get_draft_md_api)
+  service(deploy_draft_api)
+  service(ping)
+
+📄 src/routes/memberships_api.rs
+  POST /memberships → service
+  GET /memberships → service
+  GET /memberships/user/{id} → service
+  DELETE /memberships/{id} → service
+  service(create_membership_api)
+  service(get_memberships_api)
+  service(get_memberships_for_user_api)
+  service(delete_membership_api)
+
+📄 src/routes/mod.rs
+
+📄 src/routes/offers_api.rs
+  POST /offers → service
+  GET /offers/{id} → service
+  GET /offers → service
+  GET /user/{input_uid}/offers → service
+  PUT /offers/{id} → service
+  DELETE /offers/{id} → service
+  POST /wants_to_help → service
+  POST /help_events → service
+  service(create_offer_api)
+  service(get_offer_api)
+  service(get_user_offers_api)
+  service(update_offer_api)
+  service(delete_offer_api)
+  service(get_offers_api)
+  service(create_wants_to_contribute)
+  service(create_contribute_event)
+
+📄 src/routes/profile.rs
+  GET /profile → service
+  GET /profile/offers → service
+  GET /profile/completed → service
+  service(profile_json)
+  service(profile_offers_json)
+  service(profile_completed_json)
+
+📄 src/routes/ratings_api.rs
+  GET /rating/all → service
+  POST /rating/save → service
+  GET /rating/summary/array → service
+  POST /rating/rebuild-summary → service
+  GET /rating/summary/all → service
+  service(get_ratings)
+  service(save_ratings)
+  service(get_summaries)
+  service(rebuild_summary_route)
+
+📄 src/routes/recipe_drafts_api.rs
+  POST /recipe_drafts → service
+  GET /recipe_drafts → service
+  GET /recipe_drafts/{id} → service
+  POST /recipe_drafts/{id} → service
+  DELETE /recipe_drafts/{id} → service
+  POST /recipe_drafts/{id}/submit → service
+  POST /recipe_drafts/{id}/request_changes → service
+  POST /recipe_drafts/{id}/approve → service
+  POST /recipe_drafts/{id}/deploy → service
+  GET /recipe_drafts/{id}/md → service
+  POST /recipe_drafts/bulk/approve → service
+  service(create_recipe_draft_api)
+  service(get_recipe_drafts_api)
+  service(bulk_approve)
+  service(get_recipe_draft_api)
+  service(update_recipe_draft_api)
+  service(delete_recipe_draft_api)
+  service(submit_draft_api)
+  service(request_changes_api)
+  service(approve_draft_api)
+  service(get_recipe_draft_md_api)
+  service(deploy_draft_api)
+
+📄 src/routes/roles_api.rs
+  POST /roles → service
+  GET /roles → service
+  GET /roles/{id} → service
+  PUT /roles/{id} → service
+  DELETE /roles/{id} → service
+  service(create_role_api)
+  service(get_roles_api)
+  service(get_role_api)
+  service(update_role_api)
+  service(delete_role_api)
+
+📄 src/routes/users_api.rs
+  POST /users → service
+  GET /page/users → service
+  GET /users → service
+  GET /public_profile → service
+  GET /public_profile/user/{user_id} → service
+  GET /user/{user_id} → service
+  PUT /user/{user_id} → service
+  DELETE /user/{user_id} → service
+  POST /user/details → service
+  GET /reset-password/{token} → service
+  POST /reset-password → service
+  POST /set-password → service
+  service(create_user_api)
+  service(get_users_api)
+  service(get_user_api)
+  service(update_user_api)
+  service(delete_user_api)
+  service(get_users_page)
+  service(update_user_details_api)
+  service(get_public_user_api)
+  service(get_public_users_api)
+  service(set_password_new)
+  service(reset_password_token)
+  service(get_reset_password_page)

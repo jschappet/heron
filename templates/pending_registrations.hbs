@@ -1,0 +1,33 @@
+<h2>Pending Registrations for {{event_id}}</h2>
+
+<table class="table-auto w-full border border-gray-300">
+  <thead class="bg-gray-200">
+    <tr>
+      <th class="px-4 py-2">Username</th>
+      <th class="px-4 py-2">Name</th>
+      <th class="px-4 py-2">Email</th>
+      <th class="px-4 py-2">Phone</th>
+      <th class="px-4 py-2">Source</th>
+      <th class="px-4 py-2">Comments</th>
+      <th class="px-4 py-2">Assign &amp; Notify</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each registrations}}
+    <tr class="border-t">
+      <td class="px-4 py-2">{{username}}</td>
+      <td class="px-4 py-2">{{person_name}}</td>
+      <td class="px-4 py-2">{{email}}</td>
+      <td class="px-4 py-2">{{phone}}</td>
+      <td class="px-4 py-2">{{source}}</td>
+      <td class="px-4 py-2">{{comments}}</td>
+      <td class="px-4 py-2">        
+          <button onclick="assignTicket({{registration_id}}, {{user_id}}, '{{event_id}}')" class="bg-blue-500 text-white btn btn-md px-3 py-1 rounded hover:bg-blue-600">
+           Assign
+          </button>
+      </td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
+

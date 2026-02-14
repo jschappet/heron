@@ -1,0 +1,766 @@
+[
+  {
+    "file": "src/routes/authentication.rs",
+    "module": "authentication",
+    "handlers": [
+      "register_new_user",
+      "verify_account",
+      "register_new_user_off",
+      "login",
+      "logout",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/api/register"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/api/token/{token}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/api/register1"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/api/login"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/api/logout"
+      },
+      {
+        "type": "service",
+        "handler": "register_new_user"
+      },
+      {
+        "type": "service",
+        "handler": "login"
+      },
+      {
+        "type": "service",
+        "handler": "logout"
+      },
+      {
+        "type": "service",
+        "handler": "verify_account"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/config.rs",
+    "module": "config",
+    "handlers": [
+      "get_config_api",
+      "ping",
+      "ping",
+      "online",
+      "config1"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/config"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/ONLINE"
+      },
+      {
+        "type": "service",
+        "handler": "get_config_api"
+      },
+      {
+        "type": "service",
+        "handler": "online"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/drafts_api.rs",
+    "module": "drafts_api",
+    "handlers": [
+      "create_draft_api",
+      "empty_string_as_none",
+      "ping",
+      "get_drafts_api",
+      "get_draft_api",
+      "update_draft_api",
+      "delete_draft_api",
+      "submit_draft_api",
+      "request_changes_api",
+      "approve_draft_api",
+      "deploy_draft_api",
+      "generate_frontmatter",
+      "get_draft_md_api",
+      "bulk_approve",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/drafts"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/drafts/ping"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/drafts"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/drafts/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/drafts/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "DELETE",
+        "path": "/drafts/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/drafts/{id}/submit"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/drafts/{id}/request_changes"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/drafts/{id}/approve"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/drafts/{id}/deploy"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/drafts/{id}/md"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/drafts/bulk/approve"
+      },
+      {
+        "type": "service",
+        "handler": "create_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_drafts_api"
+      },
+      {
+        "type": "service",
+        "handler": "bulk_approve"
+      },
+      {
+        "type": "service",
+        "handler": "get_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "update_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "delete_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "submit_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "request_changes_api"
+      },
+      {
+        "type": "service",
+        "handler": "approve_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_draft_md_api"
+      },
+      {
+        "type": "service",
+        "handler": "deploy_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "ping"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/memberships_api.rs",
+    "module": "memberships_api",
+    "handlers": [
+      "create_membership_api",
+      "get_memberships_api",
+      "get_memberships_for_user_api",
+      "delete_membership_api",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/memberships"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/memberships"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/memberships/user/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "DELETE",
+        "path": "/memberships/{id}"
+      },
+      {
+        "type": "service",
+        "handler": "create_membership_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_memberships_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_memberships_for_user_api"
+      },
+      {
+        "type": "service",
+        "handler": "delete_membership_api"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/mod.rs",
+    "module": "mod",
+    "handlers": [],
+    "routes": []
+  },
+  {
+    "file": "src/routes/offers_api.rs",
+    "module": "offers_api",
+    "handlers": [
+      "create_offer_api",
+      "get_offer_api",
+      "get_offers_api",
+      "get_user_offers_api",
+      "update_offer_api",
+      "delete_offer_api",
+      "create_wants_to_contribute",
+      "create_contribute_event",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/offers"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/offers/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/offers"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/user/{input_uid}/offers"
+      },
+      {
+        "type": "attribute",
+        "method": "PUT",
+        "path": "/offers/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "DELETE",
+        "path": "/offers/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/wants_to_help"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/help_events"
+      },
+      {
+        "type": "service",
+        "handler": "create_offer_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_offer_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_user_offers_api"
+      },
+      {
+        "type": "service",
+        "handler": "update_offer_api"
+      },
+      {
+        "type": "service",
+        "handler": "delete_offer_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_offers_api"
+      },
+      {
+        "type": "service",
+        "handler": "create_wants_to_contribute"
+      },
+      {
+        "type": "service",
+        "handler": "create_contribute_event"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/profile.rs",
+    "module": "profile",
+    "handlers": [
+      "profile_json",
+      "profile_json_off",
+      "profile_offers_json",
+      "profile_completed_json",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/profile"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/profile/offers"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/profile/completed"
+      },
+      {
+        "type": "service",
+        "handler": "profile_json"
+      },
+      {
+        "type": "service",
+        "handler": "profile_offers_json"
+      },
+      {
+        "type": "service",
+        "handler": "profile_completed_json"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/ratings_api.rs",
+    "module": "ratings_api",
+    "handlers": [
+      "get_ratings",
+      "save_ratings",
+      "get_summaries_array",
+      "rebuild_summary_route",
+      "get_summaries",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/rating/all"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/rating/save"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/rating/summary/array"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/rating/rebuild-summary"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/rating/summary/all"
+      },
+      {
+        "type": "service",
+        "handler": "get_ratings"
+      },
+      {
+        "type": "service",
+        "handler": "save_ratings"
+      },
+      {
+        "type": "service",
+        "handler": "get_summaries"
+      },
+      {
+        "type": "service",
+        "handler": "rebuild_summary_route"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/recipe_drafts_api.rs",
+    "module": "recipe_drafts_api",
+    "handlers": [
+      "create_recipe_draft_api",
+      "get_recipe_drafts_api",
+      "get_recipe_draft_api",
+      "update_recipe_draft_api",
+      "delete_recipe_draft_api",
+      "submit_draft_api",
+      "request_changes_api",
+      "approve_draft_api",
+      "deploy_draft_api",
+      "generate_frontmatter",
+      "get_recipe_draft_md_api",
+      "bulk_approve",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/recipe_drafts"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/recipe_drafts"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/recipe_drafts/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/recipe_drafts/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "DELETE",
+        "path": "/recipe_drafts/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/recipe_drafts/{id}/submit"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/recipe_drafts/{id}/request_changes"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/recipe_drafts/{id}/approve"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/recipe_drafts/{id}/deploy"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/recipe_drafts/{id}/md"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/recipe_drafts/bulk/approve"
+      },
+      {
+        "type": "service",
+        "handler": "create_recipe_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_recipe_drafts_api"
+      },
+      {
+        "type": "service",
+        "handler": "bulk_approve"
+      },
+      {
+        "type": "service",
+        "handler": "get_recipe_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "update_recipe_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "delete_recipe_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "submit_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "request_changes_api"
+      },
+      {
+        "type": "service",
+        "handler": "approve_draft_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_recipe_draft_md_api"
+      },
+      {
+        "type": "service",
+        "handler": "deploy_draft_api"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/roles_api.rs",
+    "module": "roles_api",
+    "handlers": [
+      "create_role_api",
+      "get_roles_api",
+      "get_role_api",
+      "update_role_api",
+      "delete_role_api",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/roles"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/roles"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/roles/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "PUT",
+        "path": "/roles/{id}"
+      },
+      {
+        "type": "attribute",
+        "method": "DELETE",
+        "path": "/roles/{id}"
+      },
+      {
+        "type": "service",
+        "handler": "create_role_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_roles_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_role_api"
+      },
+      {
+        "type": "service",
+        "handler": "update_role_api"
+      },
+      {
+        "type": "service",
+        "handler": "delete_role_api"
+      }
+    ]
+  },
+  {
+    "file": "src/routes/users_api.rs",
+    "module": "users_api",
+    "handlers": [
+      "create_user_api",
+      "get_users_page",
+      "get_users_api",
+      "get_public_users_api",
+      "get_public_user_api",
+      "get_user_api",
+      "update_user_api",
+      "delete_user_api",
+      "update_user_details_api",
+      "get_reset_password_page",
+      "reset_password_token",
+      "set_password_new",
+      "config"
+    ],
+    "routes": [
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/users"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/page/users"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/users"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/public_profile"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/public_profile/user/{user_id}"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/user/{user_id}"
+      },
+      {
+        "type": "attribute",
+        "method": "PUT",
+        "path": "/user/{user_id}"
+      },
+      {
+        "type": "attribute",
+        "method": "DELETE",
+        "path": "/user/{user_id}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/user/details"
+      },
+      {
+        "type": "attribute",
+        "method": "GET",
+        "path": "/reset-password/{token}"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/reset-password"
+      },
+      {
+        "type": "attribute",
+        "method": "POST",
+        "path": "/set-password"
+      },
+      {
+        "type": "service",
+        "handler": "create_user_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_users_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_user_api"
+      },
+      {
+        "type": "service",
+        "handler": "update_user_api"
+      },
+      {
+        "type": "service",
+        "handler": "delete_user_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_users_page"
+      },
+      {
+        "type": "service",
+        "handler": "update_user_details_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_public_user_api"
+      },
+      {
+        "type": "service",
+        "handler": "get_public_users_api"
+      },
+      {
+        "type": "service",
+        "handler": "set_password_new"
+      },
+      {
+        "type": "service",
+        "handler": "reset_password_token"
+      },
+      {
+        "type": "service",
+        "handler": "get_reset_password_page"
+      }
+    ]
+  }
+]

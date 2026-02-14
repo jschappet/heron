@@ -1,0 +1,238 @@
+{
+  "types": {
+    "recipe": {
+      "label": "Recipe",
+      "has_markdown": true,
+      "fields": [
+        {
+          "label": "Title",
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Description",
+          "key": "description",
+          "type": "textarea",
+          "required": true,
+          "storage": "column"
+        },
+        {
+          "label": "Author",
+          "key": "author",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Tags",
+          "key": "tags",
+          "type": "text",
+          "required": true,
+          "storage": "meta"
+        },
+        {
+          "label": "Prep Time",
+          "key": "prep_time",
+          "type": "number",
+          "storage": "meta"
+        },
+        {
+          "label": "Cook Time",
+          "key": "cook_time",
+          "type": "number",
+          "storage": "meta"
+        },
+        {
+          "label": "Servings",
+          "key": "servings",
+          "type": "number",
+          "storage": "meta"
+        },
+        {
+          "label": "Difficulty",
+          "key": "difficulty",
+          "type": "select",
+          "options": [
+            "easy",
+            "medium",
+            "hard"
+          ],
+          "storage": "meta"
+        },
+        {
+          "label": "Dietary",
+          "key": "dietary",
+          "type": "checkbox",
+          "options": [
+            "gluten-free",
+            "non-dairy",
+            "vegetarian",
+            "vegan"
+          ],
+          "storage": "meta"
+        },
+        {
+          "label": "Source",
+          "key": "source",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Body Markdown",
+          "key": "body_md",
+          "type": "markdown",
+          "required": true
+        }
+      ]
+    },
+    "organization": {
+      "label": "Organization",
+      "has_markdown": true,
+      "fields": [
+        {
+          "label": "Title",
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Description",
+          "key": "description",
+          "type": "textarea"
+        },
+        {
+          "label": "Author",
+          "key": "author",
+          "type": "text"
+        },
+        {
+          "label": "Tags",
+          "key": "tags",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Location",
+          "key": "location",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Website",
+          "key": "website",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Featured Image",
+          "key": "featured_image",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "body_md",
+          "key": "body_md",
+          "type": "hidden",
+          "display": false
+        }
+      ]
+    },
+    "event": {
+      "label": "Event",
+      "has_markdown": true,
+      "fields": [
+        {
+          "label": "Title",
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Description",
+          "key": "description",
+          "type": "textarea"
+        },
+        {
+          "label": "Author",
+          "key": "author",
+          "type": "text"
+        },
+        {
+          "label": "Tags",
+          "key": "tags",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Start Date",
+          "key": "event_date",
+          "type": "date",
+          "storage": "meta"
+        },
+        {
+          "label": "Location",
+          "key": "location",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Capacity",
+          "key": "capacity",
+          "type": "number",
+          "storage": "meta"
+        },
+        {
+          "label": "Registration Link",
+          "key": "registration_link",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Body Markdown",
+          "key": "body_md",
+          "type": "markdown"
+        }
+      ]
+    },
+    "post": {
+      "label": "Post",
+      "has_markdown": true,
+      "fields": [
+        {
+          "label": "Title",
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Description",
+          "key": "description",
+          "type": "textarea"
+        },
+        {
+          "label": "Author",
+          "key": "author",
+          "type": "text"
+        },
+        {
+          "label": "Tags",
+          "key": "tags",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Date",
+          "key": "date",
+          "type": "date",
+          "storage": "meta"
+        },
+        {
+          "label": "Body Markdown",
+          "key": "body_md",
+          "type": "markdown",
+          "required": true
+        }
+      ]
+    }
+  }
+}
