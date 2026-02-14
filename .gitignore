@@ -1,0 +1,6 @@
+config/application.toml
+local_database.db
+rv_api
+src/build_info.rs
+target/
+.env
