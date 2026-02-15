@@ -31,6 +31,10 @@ pub mod weekly_answers;
 // routes/mod.rs
 use actix_web::{Scope, web};
 
+use crate::middleware::admin_middleware::AdminMiddleware;
+
+//use crate::middleware::admin::AdminMiddleware;
+
 
 // helper to reduce boilerplate
 fn scoped(path: &str, inner: Scope) -> Scope {
@@ -57,7 +61,12 @@ pub fn api_scope() -> Scope {
         // Twilio integration example
         .service(scoped("/twillio", twillio::scope()))
         .service(scoped("/twillio-admin", twillio_admin::scope()))
-        .service(scoped("/admin", admin_scope()))
+        .service(
+    web::scope("/admin")
+                .wrap(AdminMiddleware)
+                .service(admin_scope())
+        )
+        
 }
 
 pub fn admin_scope() -> Scope {

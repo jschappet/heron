@@ -4,7 +4,7 @@ use crate::errors::auth_error::AuthError;
 use crate::middleware::host_utils::require_host_id;
 use crate::models::drafts::*;
 use crate::types::{DocType, DraftStatus, FrontendSchema, MemberRole, load_frontend_schema};
-use crate::validator::{AdminContext, AuthContext, has_role, require_admin_role_for_host, require_role};
+use crate::validator::{ AuthContext, has_role, require_role, require_role_for_host};
 use actix_web::{HttpRequest, HttpResponse, Responder, Scope, delete, get, post, web};
 
 use serde::Deserialize;
@@ -91,7 +91,7 @@ pub struct DraftsResponse<T> {
 #[get("")]
 pub async fn get_drafts_api(
     data: web::Data<AppState>,
-    admin_context: AdminContext,
+    admin_context: AuthContext,
     req: HttpRequest,
     query: web::Query<DraftQuery>,
 ) -> Result<HttpResponse, AuthError> {
@@ -221,15 +221,16 @@ pub async fn request_changes_api(
 pub async fn approve_draft_api(
     data: web::Data<AppState>,
     id: web::Path<i32>,
-    admin_context: AdminContext,
+    admin_context: AuthContext,
     req: HttpRequest,
     //reviewer_id: web::Json<i32>,
 ) -> Result<HttpResponse, AuthError> {
        let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
 
-    require_admin_role_for_host(
+    require_role_for_host(
         &admin_context,
-        incoming_host_id
+        incoming_host_id,
+        &[MemberRole::Admin, MemberRole::Reviewer]
     )?;
     let mut conn = data.db_pool.get().unwrap();
     let reviewer_id = admin_context.user_id; // TODO: get from AuthenticatedUser
@@ -244,15 +245,16 @@ pub async fn approve_draft_api(
 pub async fn deploy_draft_api(
     data: web::Data<AppState>,
     id: web::Path<i32>,
-    admin_context: AdminContext,
+    admin_context: AuthContext,
     req:HttpRequest,
     //reviewer_id: web::Json<i32>,
 ) -> Result<HttpResponse, AuthError> {
        let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
 
-    require_admin_role_for_host(
+    require_role_for_host(
         &admin_context,
-        incoming_host_id
+        incoming_host_id,
+        &[MemberRole::Admin, MemberRole::Reviewer]
     )?;
     let mut conn = data.db_pool.get().unwrap();
     let reviewer_id = admin_context.user_id; // TODO: get from AuthenticatedUser
@@ -408,15 +410,16 @@ pub async fn get_draft_md_api(data: web::Data<AppState>, id: web::Path<i32>) -> 
 #[post("/bulk/approve")]
 pub async fn bulk_approve(
     data: web::Data<crate::AppState>,
-    admin_context: AdminContext,
+    admin_context: AuthContext,
     ids: web::Json<Vec<i32>>,
     req: HttpRequest,
 ) -> Result<HttpResponse, AuthError> {
     let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
 
-    require_admin_role_for_host(
+    require_role_for_host(
         &admin_context,
-        incoming_host_id
+        incoming_host_id,
+        &[MemberRole::Admin, MemberRole::Reviewer]
     )?;
 
     let mut conn = data.db_pool.get().unwrap();

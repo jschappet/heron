@@ -1,5 +1,5 @@
 use crate::types::{Audience, MemberRole};
-use crate::validator::{AdminContext, has_role};
+use crate::validator::{AuthContext, has_role};
 use crate::{db::DbPool, models::contribution::ContributionEventInput};
 use crate::errors::app_error::AppError;
 //use crate::models::contribution::ContributionEventInput;
@@ -24,7 +24,7 @@ pub async fn create_contribute_event(
 #[get("")]
 pub async fn list_all_effort_context(
     contributions: web::Data<ContributionDomain>,
-    admin: AdminContext
+    admin: AuthContext
 ) -> Result<HttpResponse, AppError> {
 
     // Map the admin roles into an Audience
