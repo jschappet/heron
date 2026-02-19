@@ -1,3 +1,4 @@
+use crate::routes::register;
 use crate::types::{Audience, MemberRole};
 use crate::validator::{AuthContext, has_role};
 use crate::{db::DbPool, models::contribution::ContributionEventInput};
@@ -7,9 +8,9 @@ use crate::errors::app_error::AppError;
 use crate::services::contribute_events::{ContributionDomain, ContributionEventsService, NewContributionEvent};
 use actix_web::{HttpResponse,  Scope, post, get, web};
 use serde::{Deserialize, Serialize};
+use crate::types::method::Method;
 
 
-#[post("/efforts")]
 pub async fn create_contribute_event(
     contributions: web::Data<ContributionDomain>,
     payload: web::Json<NewContributionEvent>,
@@ -21,7 +22,7 @@ pub async fn create_contribute_event(
     Ok(HttpResponse::Ok().json(result))
 }
 
-#[get("")]
+
 pub async fn list_all_effort_context(
     contributions: web::Data<ContributionDomain>,
     admin: AuthContext
@@ -43,15 +44,31 @@ pub async fn list_all_effort_context(
 
 
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-        .service(create_contribute_event)
+        .service(register(
+            "create_contribute_event",
+            Method::POST,
+            &full_path,
+            "/efforts",
+            create_contribute_event,
+            crate::types::MemberRole::Public,
+        ))
 }
 
 
-pub fn admin_scope() -> Scope {
+pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-        .service(list_all_effort_context)
+        .service(register(
+            "list_all_effort_context",
+            Method::GET,
+            &full_path,
+            "",
+            list_all_effort_context,
+            crate::types::MemberRole::Admin,
+        ))
 }
 
 

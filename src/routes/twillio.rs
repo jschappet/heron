@@ -1,7 +1,7 @@
 use actix_web::{HttpResponse, Responder, Scope, get, post, web};
 use chrono::{NaiveDateTime, Utc};
 use diesel::prelude::*;
-use crate::{app_state::AppState, schema::sms_replies::dsl::*};
+use crate::{app_state::AppState, routes::register, schema::sms_replies::dsl::*, types::method::Method};
 
 use serde::{Deserialize, Serialize};
 use reqwest::Client;
@@ -83,7 +83,7 @@ fn get_all_sms_replies(
 
 // TODO create api endpoint to get all sms replies
 // This will be used to display all replies in the admin panel
-#[get("/sms_replies")]
+// #[get("/sms_replies")]
 async fn get_sms_replies(
     data: web::Data<AppState>,
 ) -> impl Responder {
@@ -100,7 +100,7 @@ async fn get_sms_replies(
 }
 
 // Actix handler
-#[post("/webhook")]
+// #[post("/webhook")]
 async fn receive_sms_reply(
     form: web::Form<TwilioSmsPayload>,
     data: web::Data<AppState>,
@@ -172,7 +172,7 @@ pub async fn send_sms(
 }
 
 
-#[post("/send_sms")]
+// #[post("/send_sms")]
 async fn send_sms_api(
     form_data: web::Json<SendSmsRequest>,
     data: web::Data<AppState>,
@@ -194,11 +194,39 @@ struct SendSmsRequest {
 }
 
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-        .service(receive_sms_reply)
-        .service(send_sms_api)
-        .service(get_sms_replies)
+        .service(register(
+            "replies",
+            Method::GET,
+            &full_path,
+            "",
+            get_sms_replies,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // Twilio webhook (public — Twilio must reach it)
+        .service(register(
+            "webhook",
+            Method::POST,
+            &full_path,
+            "",
+            receive_sms_reply,
+            crate::types::MemberRole::Public,
+        ))
+
+        // Admin: send outbound SMS
+        .service(register(
+            "send",
+            Method::POST,
+            &full_path,
+            "",
+            send_sms_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+// .service(receive_sms_reply)
+//         .service(send_sms_api)
+//         .service(get_sms_replies)
 }
-
-

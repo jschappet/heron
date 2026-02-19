@@ -3,6 +3,8 @@ use actix_web::{HttpResponse, Responder, Scope, get, web};
 use diesel::prelude::*;
 use crate::{app_state::AppState, schema::sms_replies::dsl::*, routes::twillio::SmsReply};
 
+use crate::routes::register;
+use crate::types::method::Method;
 
 //use serde::{Deserialize, Serialize};
 //use reqwest::Client;
@@ -19,7 +21,7 @@ fn get_all_sms_replies(
 
 // TODO create api endpoint to get all sms replies
 // This will be used to display all replies in the admin panel
-#[get("/sms_replies")]
+// #[get("/sms_replies")]
 async fn get_sms_replies(
     data: web::Data<AppState>,
 ) -> impl Responder {
@@ -37,9 +39,18 @@ async fn get_sms_replies(
 
 
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-    .service(get_sms_replies) 
+    .service(register(
+    "get_sms_replies",
+    Method::GET,
+    &full_path,
+    "",
+    get_sms_replies,
+    crate::types::MemberRole::Public,
+))
+    
 }
 
 

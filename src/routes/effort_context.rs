@@ -1,11 +1,14 @@
 
 use actix_web::{Scope, get, post, put, delete, web, HttpResponse};
 use serde::{Deserialize, Serialize};
+use crate::routes::register;
+use crate::types::method::Method;
 
 use crate::{app_state::AppState, errors::app_error::AppError};
 //, types::AdminContext
 
-pub fn admin_scope() -> Scope {
+pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("/effort_context")
       //  .service(list_admin)
      //   .service(create)

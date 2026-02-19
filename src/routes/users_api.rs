@@ -1,7 +1,7 @@
 use actix_web::{HttpRequest, HttpResponse, Responder, Scope, delete, get, post, put, web};
 use serde::Deserialize;
 //use crate::crud::{create_user, get_users, get_user, update_user, delete_user};
-use crate::AppState;
+use crate::app_state::AppState;
 use crate::errors::app_error::AppError;
 use crate::middleware::host_utils::require_host;
 use crate::routes::mailing_list::send_password_reset_email;
@@ -9,6 +9,9 @@ use crate::models::user_token::{create_user_token, verify_user_token};
 use crate::models::users::{
     NewUser, PublicUser, User, create_user, delete_user, get_public_users, get_user, get_user_by_username, get_user_by_username_or_email, get_users, set_password, update_user, update_user_details
 };
+use crate::routes::register;
+use crate::types::method::Method;
+
 use crate::schema::hosts::display_name;
 use crate::settings::DeployedEnvironment;
 use crate::types::TokenPurpose;
@@ -20,7 +23,7 @@ pub struct UpdateUserDetailsRequest {
     pub user_details: serde_json::Value,
 }
 
-#[post("")]
+// #[post("")]
 async fn create_user_api(
     data: web::Data<AppState>,
     new_user: web::Json<NewUser>,
@@ -33,7 +36,7 @@ async fn create_user_api(
     }
 }
 
-#[get("/users/page")]
+// #[get("/users/page")]
 async fn get_users_page(data: web::Data<AppState>) -> impl Responder {
     let conn = &mut data.db_pool.get().expect("Database connection failed");
     match get_users(conn) {
@@ -52,7 +55,7 @@ async fn get_users_page(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-#[get("")]
+// #[get("")]
 async fn get_users_api(data: web::Data<AppState>) -> impl Responder {
     let conn = &mut data.db_pool.get().expect("Database connection failed");
     match get_users(conn) {
@@ -61,7 +64,7 @@ async fn get_users_api(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-#[get("/public_profile")]
+// #[get("/public_profile")]
 async fn get_public_users_api(
     data: web::Data<AppState>,
     auth_context: AuthContext,
@@ -83,7 +86,7 @@ async fn get_public_users_api(
     }
 }
 
-#[get("/public_profile/user/{user_id}")]
+// #[get("/public_profile/user/{user_id}")]
 async fn get_public_user_api(
     data: web::Data<AppState>,
     user_id: web::Path<i32>,
@@ -95,7 +98,7 @@ async fn get_public_user_api(
     }
 }
 
-#[get("/{user_id}")]
+// #[get("/{user_id}")]
 async fn get_user_api(data: web::Data<AppState>, user_id: web::Path<i32>) -> impl Responder {
     let conn = &mut data.db_pool.get().expect("Database connection failed");
     match get_user(conn, user_id.into_inner()) {
@@ -104,7 +107,7 @@ async fn get_user_api(data: web::Data<AppState>, user_id: web::Path<i32>) -> imp
     }
 }
 
-#[put("/{user_id}")]
+// #[put("/{user_id}")]
 async fn update_user_api(
     data: web::Data<AppState>,
     user_id: web::Path<i32>,
@@ -122,7 +125,7 @@ async fn update_user_api(
     }
 }
 
-#[delete("/{user_id}")]
+// #[delete("/{user_id}")]
 async fn delete_user_api(data: web::Data<AppState>, user_id: web::Path<i32>) -> impl Responder {
     let conn = &mut data.db_pool.get().expect("Database connection failed");
     let new_id = user_id.into_inner();
@@ -132,7 +135,7 @@ async fn delete_user_api(data: web::Data<AppState>, user_id: web::Path<i32>) -> 
     }
 }
 
-#[post("/details")]
+// #[post("/details")]
 async fn update_user_details_api(
     data: web::Data<AppState>,
     req: web::Json<UpdateUserDetailsRequest>,
@@ -162,7 +165,7 @@ pub struct ResetPasswordRequest {
 }
 
 //https://dev.revillagesociety.org/api/reset-password/b402059d-d92f-4403-a9c8-8e3baa6b161b
-#[get("/reset-password/{token}")]
+// #[get("/reset-password/{token}")]
 async fn get_reset_password_page(token: web::Path<String>, 
     data: web::Data<AppState>,
 ) -> Result<HttpResponse, AppError> {
@@ -190,7 +193,7 @@ async fn get_reset_password_page(token: web::Path<String>,
 }
 
 
-#[post("/reset-password")]
+// #[post("/reset-password")]
 async fn reset_password_token(
     data: web::Data<AppState>,
     req: HttpRequest,
@@ -236,7 +239,7 @@ async fn reset_password_token(
     Ok(HttpResponse::Ok().finish())
 }
 
-#[post("/set-password")]
+// #[post("/set-password")]
 async fn set_password_new(
     data: web::Data<AppState>,
     payload: web::Json<SetPasswordRequest>,
@@ -256,28 +259,268 @@ async fn set_password_new(
 }
 
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-        .service(create_user_api)
-        .service(get_users_api)
-        .service(get_user_api)
-        .service(update_user_api)
-        .service(delete_user_api)
-        .service(get_users_page)
-        .service(update_user_details_api)
-        .service(get_public_user_api)
-        .service(get_public_users_api)
-        .service(set_password_new)
-        .service(reset_password_token)
-        .service(get_reset_password_page)
+    .service(register(
+            "create",
+            Method::POST,
+            &full_path,
+            "",
+            create_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // list users (json)
+        .service(register(
+            "list",
+            Method::GET,
+            &full_path,
+            "",
+            get_users_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // users HTML page (admin/debug)
+        .service(register(
+            "page",
+            Method::GET,
+            &full_path,
+            "/page",
+            get_users_page,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // public directory list
+        .service(register(
+            "public_list",
+            Method::GET,
+            &full_path,
+            "/public_profile",
+            get_public_users_api,
+            crate::types::MemberRole::Member,
+        ))
+
+        // single public profile
+        .service(register(
+            "public_one",
+            Method::GET,
+            &full_path,
+            "/public_profile/user/{user_id}",
+            get_public_user_api,
+            crate::types::MemberRole::Member,
+        ))
+
+        // get one user
+        .service(register(
+            "get",
+            Method::GET,
+            &full_path,
+            "/{user_id}",
+            get_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // update user
+        .service(register(
+            "update",
+            Method::PUT,
+            &full_path,
+            "/{user_id}",
+            update_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // delete user
+        .service(register(
+            "delete",
+            Method::DELETE,
+            &full_path,
+            "/{user_id}",
+            delete_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // update own details
+        .service(register(
+            "details",
+            Method::POST,
+            &full_path,
+            "/details",
+            update_user_details_api,
+            crate::types::MemberRole::Member,
+        ))
+
+        // reset password request (public)
+        .service(register(
+            "reset_password",
+            Method::POST,
+            &full_path,
+            "/reset-password",
+            reset_password_token,
+            crate::types::MemberRole::Public,
+        ))
+
+        // reset password verification redirect
+        .service(register(
+            "reset_password_verify",
+            Method::GET,
+            &full_path,
+            "/reset-password/{token}",
+            get_reset_password_page,
+            crate::types::MemberRole::Public,
+        ))
+
+        // set new password
+        .service(register(
+            "set_password",
+            Method::POST,
+            &full_path,
+            "/set-password",
+            set_password_new,
+            crate::types::MemberRole::Public,
+        ))
 }
 
-pub fn admin_scope() -> Scope {
+        // .service(create_user_api)
+        // .service(get_users_api)
+        // .service(get_user_api)
+        // .service(update_user_api)
+        // .service(delete_user_api)
+        // .service(get_users_page)
+        // .service(update_user_details_api)
+        // .service(get_public_user_api)
+        // .service(get_public_users_api)
+        // .service(set_password_new)
+        // .service(reset_password_token)
+        // .service(get_reset_password_page)
+
+pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-        .service(create_user_api)
-        .service(delete_user_api)
-        .service(update_user_details_api)
-        .service(set_password_new)
-        .service(reset_password_token)
-        .service(get_reset_password_page)
+   .service(register(
+            "create",
+            Method::POST,
+            &full_path,
+            "",
+            create_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // list users (json)
+        .service(register(
+            "list",
+            Method::GET,
+            &full_path,
+            "",
+            get_users_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // users HTML page (admin/debug)
+        .service(register(
+            "page",
+            Method::GET,
+            &full_path,
+            "/page",
+            get_users_page,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // public directory list
+        .service(register(
+            "public_list",
+            Method::GET,
+            &full_path,
+            "/public_profile",
+            get_public_users_api,
+            crate::types::MemberRole::Member,
+        ))
+
+        // single public profile
+        .service(register(
+            "public_one",
+            Method::GET,
+            &full_path,
+            "/public_profile/user/{user_id}",
+            get_public_user_api,
+            crate::types::MemberRole::Member,
+        ))
+
+        // get one user
+        .service(register(
+            "get",
+            Method::GET,
+            &full_path,
+            "/{user_id}",
+            get_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // update user
+        .service(register(
+            "update",
+            Method::PUT,
+            &full_path,
+            "/{user_id}",
+            update_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // delete user
+        .service(register(
+            "delete",
+            Method::DELETE,
+            &full_path,
+            "/{user_id}",
+            delete_user_api,
+            crate::types::MemberRole::Admin,
+        ))
+
+        // update own details
+        .service(register(
+            "details",
+            Method::POST,
+            &full_path,
+            "/details",
+            update_user_details_api,
+            crate::types::MemberRole::Member,
+        ))
+
+        // reset password request (public)
+        .service(register(
+            "reset_password",
+            Method::POST,
+            &full_path,
+            "/reset-password",
+            reset_password_token,
+            crate::types::MemberRole::Public,
+        ))
+
+        // reset password verification redirect
+        .service(register(
+            "reset_password_verify",
+            Method::GET,
+            &full_path,
+            "/reset-password/{token}",
+            get_reset_password_page,
+            crate::types::MemberRole::Public,
+        ))
+
+        // set new password
+        .service(register(
+            "set_password",
+            Method::POST,
+            &full_path,
+            "/set-password",
+            set_password_new,
+            crate::types::MemberRole::Public,
+        ))
 }
+
+    //  .service(create_user_api)
+    //     .service(delete_user_api)
+    //     .service(update_user_details_api)
+    //     .service(set_password_new)
+    //     .service(reset_password_token)
+    //     .service(get_reset_password_page)

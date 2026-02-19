@@ -7,6 +7,9 @@ use chrono::NaiveDateTime;
 use serde::Deserialize;
 use crate::models::ticket::{self, NewTicket, Ticket};
 use crate::models::users::{self, User};
+use crate::routes::register;
+use crate::types::method::Method;
+
 #[cfg(debug_assertions)]
 use crate::registration::RegisterQuery;
 use crate::registration::{get_registrations, update_registration_user_id};

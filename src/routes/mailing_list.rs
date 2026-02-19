@@ -2,6 +2,8 @@ use actix_web::{HttpRequest, HttpResponse, Responder, Scope, get, post, web};
 //use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
 use chrono::{NaiveDateTime, Utc, Duration};
 use diesel::prelude::*;
+use crate::routes::register;
+use crate::types::method::Method;
 //use diesel::sqlite::SqliteConnection;
 //use image::{ImageFormat, Luma};
 use serde::{Deserialize, Serialize};
@@ -87,7 +89,6 @@ fn validate_token(token: &str, secret: &str) -> Option<String> {
 }
 
 // POST /subscribe
-#[post("/subscribe")]
 async fn subscribe(
     req: HttpRequest,
     data: web::Data<AppState>,
@@ -150,7 +151,6 @@ async fn subscribe(
 }
 
 // GET /confirm/<token>
-#[get("/confirm/{token}")]
 async fn confirm(
     data: web::Data<AppState>,
     token: web::Path<String>,
@@ -170,7 +170,6 @@ async fn confirm(
 }
 
 // GET /unsubscribe/<token>
-#[get("/unsubscribe/{token}")]
 async fn unsubscribe(
     data: web::Data<AppState>,
     token: web::Path<String>,
@@ -189,7 +188,6 @@ async fn unsubscribe(
     HttpResponse::BadRequest().body("Invalid or expired unsubscribe link.")
 }
 
-#[get("/mailing_list")]
 async fn list_subscribers(
     req: HttpRequest,
     _auth: AuthContext,
@@ -478,9 +476,51 @@ mod integration_tests {
     }
 }
 
-pub fn scope() -> Scope {
-    web::scope("").service(subscribe)
-        .service(confirm)
-        .service(unsubscribe)
-        .service(list_subscribers)
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
+
+    web::scope("")
+    // POST /subscribe
+.service(register(
+    "subscribe",
+    Method::POST,
+    &full_path,
+    "subscribe",
+    subscribe,
+    crate::types::MemberRole::Public,
+))
+
+// GET /confirm/{token}
+.service(register(
+    "confirm_subscription",
+    Method::GET,
+    &full_path,
+    "confirm/{token}",
+    confirm,
+    crate::types::MemberRole::Public,
+))
+
+// GET /unsubscribe/{token}
+.service(register(
+    "unsubscribe",
+    Method::GET,
+    &full_path,
+    "unsubscribe/{token}",
+    unsubscribe,
+    crate::types::MemberRole::Public,
+))
+
+// GET /mailing_list
+.service(register(
+    "list_subscribers",
+    Method::GET,
+    &full_path,
+    "mailing_list",
+    list_subscribers,
+    crate::types::MemberRole::Admin,
+))
 }
+// .service(subscribe)
+//         .service(confirm)
+//         .service(unsubscribe)
+//         .service(list_subscribers)

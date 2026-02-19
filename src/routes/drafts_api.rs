@@ -1,11 +1,14 @@
-use crate::AppState;
+use crate::app_state::AppState;
 use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
 use crate::middleware::host_utils::require_host_id;
 use crate::models::drafts::*;
 use crate::types::{DocType, DraftStatus, FrontendSchema, MemberRole, load_frontend_schema};
-use crate::validator::{ AuthContext, has_role, require_role, require_role_for_host};
+use crate::validator::{AuthContext, has_role, require_role, require_role_for_host};
 use actix_web::{HttpRequest, HttpResponse, Responder, Scope, delete, get, post, web};
+
+use crate::routes::register;
+use crate::types::method::Method;
 
 use serde::Deserialize;
 
@@ -23,13 +26,13 @@ static FRONTEND_SCHEMA: Lazy<Arc<FrontendSchema>> = Lazy::new(|| {
     }
 });
 
-#[get("/doc_schema")]
-async fn ping() -> Result<HttpResponse, AppError> {
+//#[get("/doc_schema")]
+async fn get_doc_schema() -> Result<HttpResponse, AppError> {
     Ok(HttpResponse::Ok().json(&*FRONTEND_SCHEMA))
 }
 
 // Create or save draft
-#[post("")]
+//#[post("")]
 pub async fn create_draft_api(
     data: web::Data<AppState>,
     new: web::Json<NewDraft>,
@@ -62,7 +65,7 @@ where
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
 pub struct DraftQuery {
     #[serde(default, deserialize_with = "empty_string_as_none")]
@@ -88,7 +91,7 @@ pub struct DraftsResponse<T> {
     pub drafts: Vec<T>,
 }
 
-#[get("")]
+//#[get("")]
 pub async fn get_drafts_api(
     data: web::Data<AppState>,
     admin_context: AuthContext,
@@ -97,6 +100,8 @@ pub async fn get_drafts_api(
 ) -> Result<HttpResponse, AuthError> {
     let mut conn = data.db_pool.get().unwrap();
     let host_id = require_host_id(&req).await.unwrap(); // safe fallback exists
+
+    log::debug!("Draft Query: {:?}", query);
 
     // Check if the user has Admin or Reviewer role for this host
     let is_privileged = admin_context.memberships.iter().any(|m| {
@@ -133,7 +138,7 @@ pub async fn get_drafts_api(
 }
 
 // Get single draft
-#[get("/{id}")]
+//#[get("/{id}")]
 pub async fn get_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
     match get_draft(&mut conn, id.into_inner()) {
@@ -143,7 +148,7 @@ pub async fn get_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> imp
 }
 
 // Update draft
-#[post("/{id}")]
+//#[post("/{id}")]
 pub async fn update_draft_api(
     data: web::Data<AppState>,
     id: web::Path<i32>,
@@ -163,7 +168,7 @@ pub async fn update_draft_api(
 }
 
 // Delete draft
-#[delete("/{id}")]
+//#[delete("/{id}")]
 pub async fn delete_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
     match delete_draft(&mut conn, id.into_inner()) {
@@ -173,7 +178,7 @@ pub async fn delete_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> 
 }
 
 // Submit draft
-#[post("/{id}/submit")]
+//#[post("/{id}/submit")]
 pub async fn submit_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
 
@@ -185,7 +190,7 @@ pub async fn submit_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> 
 }
 
 // Request changes
-#[post("/{id}/request_changes")]
+//#[post("/{id}/request_changes")]
 pub async fn request_changes_api(
     data: web::Data<AppState>,
     id: web::Path<i32>,
@@ -217,7 +222,7 @@ pub async fn request_changes_api(
 //   -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36'
 
 // Approve draft
-#[post("/{id}/approve")]
+//#[post("/{id}/approve")]
 pub async fn approve_draft_api(
     data: web::Data<AppState>,
     id: web::Path<i32>,
@@ -225,12 +230,12 @@ pub async fn approve_draft_api(
     req: HttpRequest,
     //reviewer_id: web::Json<i32>,
 ) -> Result<HttpResponse, AuthError> {
-       let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
+    let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
 
     require_role_for_host(
         &admin_context,
         incoming_host_id,
-        &[MemberRole::Admin, MemberRole::Reviewer]
+        &[MemberRole::Admin, MemberRole::Reviewer],
     )?;
     let mut conn = data.db_pool.get().unwrap();
     let reviewer_id = admin_context.user_id; // TODO: get from AuthenticatedUser
@@ -241,20 +246,20 @@ pub async fn approve_draft_api(
 }
 
 // Approve draft
-#[post("/{id}/deploy")]
+//#[post("/{id}/deploy")]
 pub async fn deploy_draft_api(
     data: web::Data<AppState>,
     id: web::Path<i32>,
     admin_context: AuthContext,
-    req:HttpRequest,
+    req: HttpRequest,
     //reviewer_id: web::Json<i32>,
 ) -> Result<HttpResponse, AuthError> {
-       let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
+    let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
 
     require_role_for_host(
         &admin_context,
         incoming_host_id,
-        &[MemberRole::Admin, MemberRole::Reviewer]
+        &[MemberRole::Admin, MemberRole::Reviewer],
     )?;
     let mut conn = data.db_pool.get().unwrap();
     let reviewer_id = admin_context.user_id; // TODO: get from AuthenticatedUser
@@ -274,20 +279,13 @@ fn _get_value_from_map(key: &str, map: &serde_json::Map<String, Value>) -> Strin
     } else {
         String::from(r#"key_error: "{} not found"", {}"#)
     }
-
 }
 
 fn format_frontmatter_value(key: &str, v: &serde_json::Value, _field_type: &str) -> Option<String> {
     match v {
-        serde_json::Value::String(s) => {
-            Some(format!(r#"{key}: "{}""#, s))
-        }
-        serde_json::Value::Number(n) => {
-            Some(format!(r#"{key}: {}"#, n))
-        }
-        serde_json::Value::Bool(b) => {
-            Some(format!(r#"{key}: {}"#, b))
-        }
+        serde_json::Value::String(s) => Some(format!(r#"{key}: "{}""#, s)),
+        serde_json::Value::Number(n) => Some(format!(r#"{key}: {}"#, n)),
+        serde_json::Value::Bool(b) => Some(format!(r#"{key}: {}"#, b)),
         serde_json::Value::Array(arr) => {
             let items = arr
                 .iter()
@@ -304,7 +302,6 @@ fn format_frontmatter_value(key: &str, v: &serde_json::Value, _field_type: &str)
 fn format_frontmatter_scalar(key: &str, v: &str) -> String {
     format!(r#"{key}: "{}""#, v)
 }
-
 
 use serde_json::Value;
 
@@ -392,7 +389,7 @@ fn generate_frontmatter(draft: &Draft) -> String {
     frontmatter
 }
 
-#[get("/{id}/md")]
+//#[get("/{id}/md")]
 pub async fn get_draft_md_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
     match get_draft(&mut conn, id.into_inner()) {
@@ -406,12 +403,16 @@ pub async fn get_draft_md_api(data: web::Data<AppState>, id: web::Path<i32>) -> 
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
+#[derive(Deserialize, Debug)]
+pub struct BulkIds {
+    pub ids: Vec<i32>,
+}
 
-#[post("/bulk/approve")]
+//#[post("/bulk/approve")]
 pub async fn bulk_approve(
-    data: web::Data<crate::AppState>,
+    data: web::Data<crate::app_state::AppState>,
     admin_context: AuthContext,
-    ids: web::Json<Vec<i32>>,
+    ids: web::Json<BulkIds>,
     req: HttpRequest,
 ) -> Result<HttpResponse, AuthError> {
     let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
@@ -419,9 +420,9 @@ pub async fn bulk_approve(
     require_role_for_host(
         &admin_context,
         incoming_host_id,
-        &[MemberRole::Admin, MemberRole::Reviewer]
+        &[MemberRole::Admin, MemberRole::Reviewer],
     )?;
-
+    let ids = ids.into_inner().ids;
     let mut conn = data.db_pool.get().unwrap();
     match approve_drafts(&mut conn, &ids, admin_context.user_id) {
         Ok(_) => (),
@@ -430,18 +431,124 @@ pub async fn bulk_approve(
     Ok(HttpResponse::Ok().finish())
 }
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
+
     web::scope("")
-        .service(ping)
-        .service(create_draft_api)
-        .service(get_drafts_api)
-        .service(bulk_approve)
-        .service(get_draft_api)
-        .service(update_draft_api)
-        .service(delete_draft_api)
-        .service(submit_draft_api)
-        .service(request_changes_api)
-        .service(approve_draft_api)
-        .service(get_draft_md_api)
-        .service(deploy_draft_api)
+        // Schema
+        .service(register(
+            "draft_doc_schema",
+            Method::GET,
+            &full_path,
+            "doc_schema",
+            get_doc_schema,
+            MemberRole::Public,
+        ))
+        // Create & List
+        .service(register(
+            "draft_create",
+            Method::POST,
+            &full_path,
+            "",
+            create_draft_api,
+            MemberRole::Member,
+        ))
+        .service(register(
+            "draft_list",
+            Method::GET,
+            &full_path,
+            "",
+            get_drafts_api,
+            MemberRole::Member,
+        ))
+        // Single Draft CRUD
+        .service(register(
+            "draft_get",
+            Method::GET,
+            &full_path,
+            "{id}",
+            get_draft_api,
+            MemberRole::Member,
+        ))
+        .service(register(
+            "draft_update",
+            Method::POST,
+            &full_path,
+            "{id}",
+            update_draft_api,
+            MemberRole::Member,
+        ))
+        .service(register(
+            "draft_delete",
+            Method::DELETE,
+            &full_path,
+            "{id}",
+            delete_draft_api,
+            MemberRole::Member,
+        ))
+        // Workflow Actions
+        .service(register(
+            "draft_submit",
+            Method::POST,
+            &full_path,
+            "{id}/submit",
+            submit_draft_api,
+            MemberRole::Member,
+        ))
+        .service(register(
+            "draft_request_changes",
+            Method::POST,
+            &full_path,
+            "{id}/request_changes",
+            request_changes_api,
+            MemberRole::Reviewer,
+        ))
+        // Review / Publish
+        .service(register(
+            "draft_approve",
+            Method::POST,
+            &full_path,
+            "{id}/approve",
+            approve_draft_api,
+            MemberRole::Reviewer,
+        ))
+        .service(register(
+            "draft_deploy",
+            Method::POST,
+            &full_path,
+            "{id}/deploy",
+            deploy_draft_api,
+            MemberRole::Reviewer,
+        ))
+        // Markdown Export
+        .service(register(
+            "draft_markdown",
+            Method::GET,
+            &full_path,
+            "{id}/md",
+            get_draft_md_api,
+            MemberRole::Member,
+        ))
+        // Bulk Approval
+        .service(register(
+            "draft_bulk_approve",
+            Method::POST,
+            &full_path,
+            "bulk/approve",
+            bulk_approve,
+            MemberRole::Reviewer,
+        ))
 }
+
+// .service(get_doc_schema)
+// .service(create_draft_api)
+// .service(get_drafts_api)
+// .service(bulk_approve)
+// .service(get_draft_api)
+// .service(update_draft_api)
+// .service(delete_draft_api)
+// .service(submit_draft_api)
+// .service(request_changes_api)
+// .service(approve_draft_api)
+// .service(get_draft_md_api)
+// .service(deploy_draft_api)

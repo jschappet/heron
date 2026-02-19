@@ -1,12 +1,16 @@
 use actix_web::{HttpRequest, HttpResponse, Responder, Scope, get, web};
+//use reqwest::Method;
 use serde::Serialize;
 
 use crate::db::DbPool;
 use crate::errors::app_error::AppError;
 use crate::middleware::host_utils::{require_host, require_host_slug};
+use crate::routes::{register, role_allows, routes};
 use crate::services::contribute_events::{ContributionDomain, ContributionEventsService};
-use crate::types::DraftStatus;
+use crate::types::method::Method;
+use crate::types::{DraftStatus, MemberRole};
 use crate::types::{Difficulty, Dietary, ConfigOption};
+use crate::validator::AuthContext;
 
 #[derive(Serialize)]
 pub struct ConfigHash {
@@ -24,7 +28,6 @@ pub struct ConfigResponse {
 }
 
 
-#[get("")]
 pub async fn get_config_api(
     contributions: web::Data<ContributionDomain>,
 ) -> Result<HttpResponse, AppError> {
@@ -65,7 +68,7 @@ mod mail {
 
 use crate::build_info;
 
-#[get("/ONLINE")]
+
 async fn online() -> impl Responder {
     // Build info from env
 
@@ -86,10 +89,8 @@ async fn online() -> impl Responder {
 }
 
 
-use crate::middleware::host::HostContext;
 
 
-#[get("/ping")]
 async fn ping(req: HttpRequest) -> HttpResponse {
     match require_host(&req).await {
         Ok(host) => {
@@ -100,12 +101,45 @@ async fn ping(req: HttpRequest) -> HttpResponse {
     }
 }
 
+#[derive(serde::Serialize)]
+pub struct Capability {
+    pub key: &'static str,
+    pub url: String,
+    pub method: &'static str,
+    pub auth: bool,
+}
+
+
+pub async fn capabilities(user: AuthContext) -> impl Responder {
+    let role_list = user.get_roles();
+
+    let routes = {
+        let guard = routes().lock().unwrap();
+
+        guard
+            .iter()
+            .filter(|r| role_allows(&role_list, &r.roles))
+            .map(|r| Capability {
+                key: r.key,
+                url: r.url(),
+                method: r.method,
+                auth: !matches!(r.roles.as_slice(), [MemberRole::Public]),
+            })
+            .collect::<Vec<_>>()
+    };
+
+    HttpResponse::Ok().json(routes)
+}
 
 
 
-pub fn scope() -> Scope {
+
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path= parent_path.join("/");
+
     web::scope("")
-        .service(get_config_api)
-        .service(online)
-        .service(ping)
+        .service(register("config", Method::GET, &full_path, "", get_config_api, MemberRole::Public))
+        .service(register("online", Method::GET, &full_path, "/ONLINE", online, MemberRole::Public))
+        .service(register("ping", Method::GET, &full_path, "/ping", ping, MemberRole::Public))
+        .service(register("capabilities", Method::GET, &full_path, "/capabilities", capabilities, MemberRole::Public))
 }

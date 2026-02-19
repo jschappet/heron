@@ -7,6 +7,8 @@ use actix_web::{
 };
 use futures_util::future::{LocalBoxFuture, Ready, ok};
 use std::rc::Rc;
+use actix_web::dev::Payload;
+
 
 /// Marker type
 pub struct AdminMiddleware;
@@ -59,9 +61,11 @@ where
                 auth.clone()
             } else {
                 // 2️⃣ Extract manually from request if missing
+                
                 log::debug!("Extracting Auth Manually");
-                let mut payload = req.take_payload();
+                let mut payload = Payload::None;  // 👈 empty payload
                 let auth = match AuthContext::from_request(req.request(), &mut payload).await {
+
                     Ok(a) => a,
                     Err(_) => {
                         return Ok(req.into_response(

@@ -2,18 +2,21 @@ use actix_web::{HttpResponse, Scope, delete, get, post, put, web};
 use serde::Deserialize;
 
 use crate::errors::app_error::AppError;
-use crate::models::contribution:: WantsToContributeInput;
+use crate::models::contribution::WantsToContributeInput;
 use crate::models::offers::{
     OfferChangeset, create_offer, delete_offer, get_offer, get_offers, get_user_offers,
     update_offer,
 };
+
+use crate::routes::register;
+use crate::types::method::Method;
 
 use crate::app_state::AppState;
 use crate::schema::{contribution_events, wants_to_contribute};
 use crate::validator::AuthContext;
 use diesel::RunQueryDsl;
 
-#[post("")]
+// #[post("")]
 pub async fn create_offer_api(
     auth_context: AuthContext,
     data: web::Data<AppState>,
@@ -28,7 +31,7 @@ pub async fn create_offer_api(
     Ok(HttpResponse::Ok().json(offer_obj))
 }
 
-#[get("/{id}")]
+// #[get("/{id}")]
 pub async fn get_offer_api(
     data: web::Data<AppState>,
     offer_id: web::Path<i32>,
@@ -38,14 +41,14 @@ pub async fn get_offer_api(
     Ok(HttpResponse::Ok().json(offer_obj))
 }
 
-#[get("")]
+// #[get("")]
 pub async fn get_offers_api(data: web::Data<AppState>) -> Result<HttpResponse, AppError> {
     let mut conn = data.db_conn()?;
     let offer_obj = get_offers(&mut conn)?;
     Ok(HttpResponse::Ok().json(offer_obj))
 }
 
-#[get("/user/{input_uid}/offers")]
+// #[get("/user/{input_uid}/offers")]
 pub async fn get_user_offers_api(
     data: web::Data<AppState>,
     input_uid: web::Path<i32>,
@@ -55,7 +58,7 @@ pub async fn get_user_offers_api(
     Ok(HttpResponse::Ok().json(user_offers))
 }
 
-#[put("/{id}")]
+// #[put("/{id}")]
 pub async fn update_offer_api(
     data: web::Data<AppState>,
     offer_id: web::Path<i32>,
@@ -67,7 +70,7 @@ pub async fn update_offer_api(
     Ok(HttpResponse::Ok().json(offer_obj))
 }
 
-#[delete("/{id}")]
+// #[delete("/{id}")]
 pub async fn delete_offer_api(
     data: web::Data<AppState>,
     offer_id: web::Path<i32>,
@@ -87,7 +90,7 @@ pub struct WantsToHelpData {
     pub notes: Option<String>,
 }
 
-#[post("/wants_to_help")]
+// #[post("/wants_to_help")]
 pub async fn create_wants_to_contribute(
     auth_context: AuthContext,
     data: web::Data<AppState>,
@@ -103,7 +106,6 @@ pub async fn create_wants_to_contribute(
         availability_days: payload.availability_days,
         availability_times: payload.availability_times,
         notes: payload.notes,
-        
     };
 
     let _ = diesel::insert_into(wants_to_contribute::table)
@@ -112,7 +114,7 @@ pub async fn create_wants_to_contribute(
 
     Ok(HttpResponse::Ok().finish())
 }
-/* 
+/*
 #[post("/help_events")]
 pub async fn create_contribute_event(
     auth_context: AuthContext,
@@ -134,14 +136,79 @@ pub async fn create_contribute_event(
 }
  */
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-        .service(create_offer_api)
-        .service(get_offer_api)
-        .service(get_user_offers_api)
-        .service(update_offer_api)
-        .service(delete_offer_api)
-        .service(get_offers_api)
-        .service(create_wants_to_contribute)
-        //.service(create_contribute_event)
+        // Offer API registrations
+        // POST / (create offer)
+        .service(register(
+            "create_offer",
+            Method::POST,
+            &full_path,
+            "",
+            create_offer_api,
+            crate::types::MemberRole::Member,
+        ))
+        // GET /{id} (get single offer)
+        .service(register(
+            "get_offer",
+            Method::GET,
+            &full_path,
+            "{id}",
+            get_offer_api,
+            crate::types::MemberRole::Public,
+        ))
+        // GET / (list all offers)
+        .service(register(
+            "get_offers",
+            Method::GET,
+            &full_path,
+            "",
+            get_offers_api,
+            crate::types::MemberRole::Public,
+        ))
+        // GET /user/{input_uid}/offers (offers for a specific user)
+        .service(register(
+            "get_user_offers",
+            Method::GET,
+            &full_path,
+            "user/{input_uid}/offers",
+            get_user_offers_api,
+            crate::types::MemberRole::Public,
+        ))
+        // PUT /{id} (update offer)
+        .service(register(
+            "update_offer",
+            Method::PUT,
+            &full_path,
+            "{id}",
+            update_offer_api,
+            crate::types::MemberRole::Member,
+        ))
+        // DELETE /{id} (delete offer)
+        .service(register(
+            "delete_offer",
+            Method::DELETE,
+            &full_path,
+            "{id}",
+            delete_offer_api,
+            crate::types::MemberRole::Member,
+        ))
+        // POST /wants_to_help (create wants_to_contribute)
+        .service(register(
+            "create_wants_to_contribute",
+            Method::POST,
+            &full_path,
+            "wants_to_help",
+            create_wants_to_contribute,
+            crate::types::MemberRole::Member,
+        ))
 }
+//  .service(create_offer_api)
+//         .service(get_offer_api)
+//         .service(get_user_offers_api)
+//         .service(update_offer_api)
+//         .service(delete_offer_api)
+//         .service(get_offers_api)
+//         .service(create_wants_to_contribute)
+//         //.service(create_contribute_event)

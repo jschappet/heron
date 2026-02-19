@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use actix_web::{HttpResponse, Responder, Scope, get, post, web};
 //use crate::schema::question_summaries::question_text;
 use crate::schema::{weekly_answers, question_summaries};
+use crate::routes::register;
+use crate::types::method::Method;
 
 use crate::app_state::AppState;
 //use diesel::upsert::excluded;
@@ -152,7 +154,7 @@ pub fn get_all_weekly_answers(
 
 
 
-#[post("")]
+// #[post("")]
 async fn submit_weekly_answers(
     data: web::Data<AppState>,
     payload: web::Json<WeeklyAnswersPayload>,
@@ -215,7 +217,7 @@ async fn submit_weekly_answers(
     HttpResponse::Ok().json(summaries_response)
 }
 
-#[get("/question/{uuid}/answers")]
+// #[get("/question/{uuid}/answers")]
 async fn get_answers(
     data: web::Data<AppState>,
     in_question_uuid: web::Path<String>,
@@ -227,7 +229,7 @@ async fn get_answers(
     }
 }
 
-#[post("/question/{uuid}/summary")]
+// #[post("/question/{uuid}/summary")]
 async fn submit_summary(
     data: web::Data<AppState>,
     in_question_uuid: web::Path<String>,
@@ -241,7 +243,7 @@ async fn submit_summary(
     }
 }
 
-#[get("/question/{uuid}/summary")]
+// #[get("/question/{uuid}/summary")]
 async fn get_summary(
     data: web::Data<AppState>,
     in_question_uuid: web::Path<String>,
@@ -269,7 +271,7 @@ pub struct AllAnswersQuery {
     min_answers: Option<usize>, // Optional parameter
 }
 
-#[get("/question-summaries/all")]
+// #[get("/question-summaries/all")]
 async fn get_all_summaries(
     data: web::Data<AppState>,
 ) -> impl Responder {
@@ -281,7 +283,7 @@ async fn get_all_summaries(
 }
 
 
-#[get("/all")]
+// #[get("/all")]
 async fn get_all_answers(
     data: web::Data<AppState>,
     query: web::Query<AllAnswersQuery>,
@@ -344,7 +346,7 @@ struct UploadedQuestion {
 }
 
 
-#[post("/questions/upload")]
+// #[post("/questions/upload")]
 async fn upload_questions(
     data: web::Data<AppState>,
     payload: web::Json<Vec<UploadedQuestion>>,
@@ -400,7 +402,7 @@ pub struct UpdateSummaryRequest {
     pub prompt: String,
 }
 
-#[post("/question-summaries/update")]
+// #[post("/question-summaries/update")]
 async fn post_question_summary(
     data: web::Data<AppState>,
     payload: web::Json<UpdateSummaryRequest>,
@@ -441,14 +443,96 @@ async fn post_question_summary(
 
 }
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");    
     web::scope("")
-        .service(submit_weekly_answers)
-       .service(get_answers)
-       .service(submit_summary)
-       .service(get_summary)
-       .service(get_all_answers)
-       .service(upload_questions)
-       .service(post_question_summary)
-       .service(get_all_summaries)
+    // POST / (submit weekly answers)
+.service(register(
+    "submit_weekly_answers",
+    Method::POST,
+    &full_path,
+    "",
+    submit_weekly_answers,
+    crate::types::MemberRole::Public,
+))
+
+// GET /question/{uuid}/answers
+.service(register(
+    "get_answers_by_question",
+    Method::GET,
+    &full_path,
+    "question/{uuid}/answers",
+    get_answers,
+    crate::types::MemberRole::Public,
+))
+
+// POST /question/{uuid}/summary
+.service(register(
+    "submit_question_summary",
+    Method::POST,
+    &full_path,
+    "question/{uuid}/summary",
+    submit_summary,
+    crate::types::MemberRole::Admin,
+))
+
+// GET /question/{uuid}/summary
+.service(register(
+    "get_question_summary",
+    Method::GET,
+    &full_path,
+    "question/{uuid}/summary",
+    get_summary,
+    crate::types::MemberRole::Public,
+))
+
+// GET /question-summaries/all
+.service(register(
+    "get_all_question_summaries",
+    Method::GET,
+    &full_path,
+    "question-summaries/all",
+    get_all_summaries,
+    crate::types::MemberRole::Public,
+))
+
+// GET /all (all answers)
+.service(register(
+    "get_all_weekly_answers",
+    Method::GET,
+    &full_path,
+    "all",
+    get_all_answers,
+    crate::types::MemberRole::Public,
+))
+
+// POST /questions/upload
+.service(register(
+    "upload_questions",
+    Method::POST,
+    &full_path,
+    "questions/upload",
+    upload_questions,
+    crate::types::MemberRole::Admin,
+))
+
+// POST /question-summaries/update
+.service(register(
+    "update_question_summary",
+    Method::POST,
+    &full_path,
+    "question-summaries/update",
+    post_question_summary,
+    crate::types::MemberRole::Admin,
+))
+
+ 
 }
+    //    .service(submit_weekly_answers)
+    //    .service(get_answers)
+    //    .service(submit_summary)
+    //    .service(get_summary)
+    //    .service(get_all_answers)
+    //    .service(upload_questions)
+    //    .service(post_question_summary)
+    //    .service(get_all_summaries)

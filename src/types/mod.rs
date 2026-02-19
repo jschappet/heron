@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 mod field_schema;
+pub(crate) mod method;
 
 pub use field_schema::{ FrontendSchema, load_frontend_schema};
 mod auth_context;
@@ -265,6 +266,7 @@ impl ToSql<Text, Sqlite> for DraftStatus {
 #[derive(Debug, Clone,Copy,PartialEq,Eq,Serialize,Deserialize,FromSqlRow)]
 #[serde(rename_all = "snake_case")]
 pub enum MemberRole {
+    Public,
     Admin,
     Reviewer,
     Member,
@@ -275,6 +277,7 @@ pub enum MemberRole {
 impl MemberRole {
     fn meta(self) -> (&'static str, &'static str) {
         match self {
+            MemberRole::Public => ("public", "Public"),
             MemberRole::Admin => ("admin", "Admin"),
             MemberRole::Reviewer => ("reviewer", "Reviewer"),
             MemberRole::Member => ("member", "Member"),
@@ -295,7 +298,7 @@ impl MemberRole {
 
     #[allow(dead_code)]
     pub fn all() -> Vec<ConfigOption> {
-        [MemberRole::Admin, MemberRole::Reviewer, MemberRole::Member, MemberRole::Organizer, MemberRole::Volunteer, MemberRole::Guest]
+        [MemberRole::Public,MemberRole::Admin, MemberRole::Reviewer, MemberRole::Member, MemberRole::Organizer, MemberRole::Volunteer, MemberRole::Guest]
             .into_iter()
             .map(|d| ConfigOption {
                 value: d.value(),

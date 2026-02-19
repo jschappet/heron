@@ -6,6 +6,7 @@ use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
 use crate::middleware::host_utils::require_host;
 use crate::models::user_token::verify_user_token;
+use crate::routes::register;
 use crate::schema::hosts::display_name;
 use serde::Deserialize;
 //use crate::models::offers::*;
@@ -13,7 +14,7 @@ use serde::Deserialize;
 use crate::app_state::AppState;
 use crate::models::users::{self};
 use crate::types::TokenPurpose;
-
+use crate::types::method::Method;
 #[derive(Deserialize)]
 struct RegisterData {
     username: String,
@@ -23,7 +24,6 @@ struct RegisterData {
 
 use actix_web::web::Either;
 
-#[post("/register")]
 async fn register_new_user(
     data: web::Data<AppState>,
     req: HttpRequest,
@@ -56,7 +56,6 @@ async fn register_new_user(
     Ok(HttpResponse::Ok().body("User registered successfully"))
 }
 
-#[get("/token/{token}")]
 async fn verify_account(
     data: web::Data<AppState>,
     token: web::Path<String>,
@@ -83,7 +82,6 @@ async fn verify_account(
     }
 }
 
-#[post("/register1")]
 #[cfg(debug_assertions)]
 async fn register_new_user_off(
     data: web::Data<AppState>,
@@ -113,7 +111,6 @@ struct LoginData {
     password: String,
 }
 
-#[post("/login")]
 async fn login(
     session: Session,
     form: web::Form<LoginData>,
@@ -142,7 +139,6 @@ async fn login(
     }
 }
 
-#[post("/logout")]
 async fn logout(session: Session) -> Result<HttpResponse, AppError> {
     session.remove("user_id");
     session.purge();
@@ -156,10 +152,41 @@ async fn logout(session: Session) -> Result<HttpResponse, AppError> {
    Public Scope
    ========================= */
 
-pub fn scope() -> Scope {
+
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
+
     web::scope("")
-        .service(register_new_user)
-        .service(verify_account)
-        .service(login)
-        .service(logout)
+        .service(register(
+            "register_new_user",
+            Method::POST,
+            &full_path,
+            "",
+            register_new_user,
+            crate::types::MemberRole::Public,
+        ))
+        .service(register(
+            "verify_account",
+            Method::GET,
+            &full_path,
+            "/token/{token}",
+            verify_account,
+            crate::types::MemberRole::Public,
+        ))
+        .service(register(
+            "login",
+            Method::POST,
+            &full_path,
+            "/login",
+            login,
+            crate::types::MemberRole::Public,
+        ))
+        .service(register(
+            "logout",
+            Method::POST,
+            &full_path,
+            "/logout",
+            logout,
+            crate::types::MemberRole::Member,
+        ))
 }

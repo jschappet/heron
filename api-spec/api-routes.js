@@ -96,9 +96,9 @@ export const ROUTES = {
     "auth": false
   },
   "ping": {
-    "url": "/api/drafts/doc_schema",
+    "url": "/api/config/ping",
     "method": "GET",
-    "auth": true
+    "auth": false
   },
   "create_role_api": {
     "url": "/api/roles/",
@@ -198,62 +198,7 @@ export const ROUTES = {
   "create_contribute_event": {
     "url": "/api/celebrate/efforts",
     "method": "POST",
-    "auth": false
-  },
-  "create_draft_api": {
-    "url": "/api/drafts/",
-    "method": "POST",
     "auth": true
-  },
-  "get_drafts_api": {
-    "url": "/api/drafts/",
-    "method": "GET",
-    "auth": false
-  },
-  "get_draft_api": {
-    "url": "/api/drafts/{id}",
-    "method": "GET",
-    "auth": true
-  },
-  "update_draft_api": {
-    "url": "/api/drafts/{id}",
-    "method": "POST",
-    "auth": true
-  },
-  "delete_draft_api": {
-    "url": "/api/drafts/{id}",
-    "method": "DELETE",
-    "auth": false
-  },
-  "submit_draft_api": {
-    "url": "/api/drafts/{id}/submit",
-    "method": "POST",
-    "auth": false
-  },
-  "request_changes_api": {
-    "url": "/api/drafts/{id}/request_changes",
-    "method": "POST",
-    "auth": false
-  },
-  "approve_draft_api": {
-    "url": "/api/drafts/{id}/approve",
-    "method": "POST",
-    "auth": false
-  },
-  "deploy_draft_api": {
-    "url": "/api/drafts/{id}/deploy",
-    "method": "POST",
-    "auth": false
-  },
-  "get_draft_md_api": {
-    "url": "/api/drafts/{id}/md",
-    "method": "GET",
-    "auth": false
-  },
-  "bulk_approve": {
-    "url": "/api/drafts/bulk/approve",
-    "method": "POST",
-    "auth": false
   },
   "get_ratings": {
     "url": "/api/ratings/all",
@@ -415,6 +360,11 @@ export const ROUTES = {
     "method": "GET",
     "auth": true
   },
+  "list_all_effort_context": {
+    "url": "/api/celebrate/",
+    "method": "GET",
+    "auth": true
+  },
   "_create_contribute_event": {
     "url": "/api/celebrate/efforts_off",
     "method": "POST",
@@ -434,5 +384,65 @@ export const ROUTES = {
     "url": "/api/twillio/send_sms",
     "method": "POST",
     "auth": false
+  },
+  "get_doc_schema": {
+    "url": "/api/drafts/doc_schema",
+    "method": "GET",
+    "auth": true
+  },
+  "create_draft_api": {
+    "url": "/api/drafts/",
+    "method": "POST",
+    "auth": true
+  },
+  "get_drafts_api": {
+    "url": "/api/drafts/",
+    "method": "GET",
+    "auth": true
+  },
+  "get_draft_api": {
+    "url": "/api/drafts/{id}",
+    "method": "GET",
+    "auth": true
+  },
+  "update_draft_api": {
+    "url": "/api/drafts/{id}",
+    "method": "POST",
+    "auth": true
+  },
+  "delete_draft_api": {
+    "url": "/api/drafts/{id}",
+    "method": "DELETE",
+    "auth": false
+  },
+  "submit_draft_api": {
+    "url": "/api/drafts/{id}/submit",
+    "method": "POST",
+    "auth": false
+  },
+  "request_changes_api": {
+    "url": "/api/drafts/{id}/request_changes",
+    "method": "POST",
+    "auth": false
+  },
+  "approve_draft_api": {
+    "url": "/api/drafts/{id}/approve",
+    "method": "POST",
+    "auth": true
+  },
+  "deploy_draft_api": {
+    "url": "/api/drafts/{id}/deploy",
+    "method": "POST",
+    "auth": true
+  },
+  "get_draft_md_api": {
+    "url": "/api/drafts/{id}/md",
+    "method": "GET",
+    "auth": false
+  },
+  "bulk_approve": {
+    "url": "/api/drafts/bulk/approve",
+    "method": "POST",
+    "auth": true
   }
 };

@@ -1,9 +1,11 @@
 use actix_web::{HttpResponse, Responder, Scope, delete, get, post, put, web};
 
-use crate::AppState;
+use crate::app_state::AppState;
 use crate::models::roles::*;
+use crate::routes::register;
+use crate::types::method::Method;
 
-#[post("")]
+// #[post("")]
 pub async fn create_role_api(
     data: web::Data<AppState>,
     new_role: web::Json<NewRole>,
@@ -15,7 +17,7 @@ pub async fn create_role_api(
     }
 }
 
-#[get("")]
+// #[get("")]
 pub async fn get_roles_api(data: web::Data<AppState>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
     match get_roles(&mut conn) {
@@ -24,7 +26,7 @@ pub async fn get_roles_api(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-#[get("/{id}")]
+// #[get("/{id}")]
 pub async fn get_role_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
     match get_role(&mut conn, id.into_inner()) {
@@ -33,7 +35,7 @@ pub async fn get_role_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl
     }
 }
 
-#[put("/{id}")]
+// #[put("/{id}")]
 pub async fn update_role_api(
     data: web::Data<AppState>,
     id: web::Path<i32>,
@@ -46,7 +48,7 @@ pub async fn update_role_api(
     }
 }
 
-#[delete("/{id}")]
+// #[delete("/{id}")]
 pub async fn delete_role_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
     match delete_role(&mut conn, id.into_inner()) {
@@ -55,12 +57,52 @@ pub async fn delete_role_api(data: web::Data<AppState>, id: web::Path<i32>) -> i
     }
 }
 
-
-
-pub fn scope() -> Scope {
-    web::scope("").service(create_role_api)
-        .service(get_roles_api)
-        .service(get_role_api)
-        .service(update_role_api)
-        .service(delete_role_api)
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
+    web::scope("")
+        .service(register(
+            "create_role",
+            Method::POST,
+            &full_path,
+            "",
+            create_role_api,
+            crate::types::MemberRole::Admin,
+        ))
+        .service(register(
+            "get_roles",
+            Method::GET,
+            &full_path,
+            "",
+            get_roles_api,
+            crate::types::MemberRole::Admin,
+        ))
+        .service(register(
+            "get_role",
+            Method::GET,
+            &full_path,
+            "{id}",
+            get_role_api,
+            crate::types::MemberRole::Admin,
+        ))
+        .service(register(
+            "update_role",
+            Method::PUT,
+            &full_path,
+            "{id}",
+            update_role_api,
+            crate::types::MemberRole::Admin,
+        ))
+        .service(register(
+            "delete_role",
+            Method::DELETE,
+            &full_path,
+            "{id}",
+            delete_role_api,
+            crate::types::MemberRole::Admin,
+        ))
 }
+
+// .service(get_roles_api)
+//         .service(get_role_api)
+//         .service(update_role_api)
+//         .service(delete_role_api)

@@ -10,10 +10,12 @@ use crate::{
 };
 use actix_session::Session;
 use actix_web::{HttpResponse, Scope, get, web};
+use crate::routes::register;
+use crate::types::method::Method;
 
 use serde_json::json;
 
-#[get("")]
+// #[get("")]
 pub async fn profile_json(
     data: web::Data<AppState>,
     session: Session,
@@ -63,7 +65,7 @@ pub async fn profile_json(
     })))
 }
 
-#[get("/offers")]
+// #[get("/offers")]
 pub async fn profile_offers_json(
     data: web::Data<AppState>,
     auth_context: AuthContext,
@@ -76,7 +78,7 @@ pub async fn profile_offers_json(
     Ok(HttpResponse::Ok().json(offers))
 }
 
-#[get("/completed")]
+// #[get("/completed")]
 pub async fn profile_completed_json(
     data: web::Data<AppState>,
     auth_context: AuthContext,
@@ -103,9 +105,36 @@ pub async fn profile_completed_json(
 }
 
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");  
     web::scope("")
-        .service(profile_json)
-        .service(profile_offers_json)
-        .service(profile_completed_json)
+.service(register(
+    "profile_json",
+    Method::GET,
+    &full_path,
+    "",
+    profile_json,
+    crate::types::MemberRole::Member,
+))
+.service(register(
+    "profile_offers_json",
+    Method::GET,
+    &full_path,
+    "offers",
+    profile_offers_json,
+    crate::types::MemberRole::Member,
+))
+.service(register(
+    "profile_completed_json",
+    Method::GET,
+    &full_path,
+    "completed",
+    profile_completed_json,
+    crate::types::MemberRole::Member,
+))
+
 }
+
+// .service(profile_json)
+//         .service(profile_offers_json)
+//         .service(profile_completed_json)

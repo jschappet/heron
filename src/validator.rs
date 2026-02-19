@@ -2,7 +2,7 @@ use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
 use crate::middleware::host_utils::require_host_id;
 //use crate::types::{AdminContext, MemberRole, MembershipContext};
-use crate::{app_state::AppState, users::get_user};
+use crate::{app_state::AppState, models::users::get_user};
 use actix_web::HttpMessage;
 
 use actix_session::Session;
@@ -40,6 +40,15 @@ impl AuthContext {
         self.memberships
             .iter()
             .any(|m| matches!(m.role, MemberRole::Admin))
+          // And not guest
+            
+    }
+
+    pub fn is_reviewer(&self) -> bool {
+        // 3️⃣ Check admin membership
+        self.memberships
+            .iter()
+            .any(|m| matches!(m.role, MemberRole::Reviewer))
     }
 }
 

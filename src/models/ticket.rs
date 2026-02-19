@@ -4,8 +4,8 @@ use diesel::sqlite::SqliteConnection;
 use chrono::{NaiveDateTime, Utc};
 
 use uuid::Uuid;
-use crate::users::User;
-use crate::{registration, users};
+use crate::models::users::User;
+use crate::{registration, models::users};
 use crate::registration::Registration;
 use crate::schema::ticket::dsl::ticket;
 use crate::schema::ticket::*;

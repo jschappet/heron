@@ -6,6 +6,8 @@ use std::fs;
 use std::path::Path;
 use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
+use crate::routes::register;
+use crate::types::method::Method;
 
 use diesel::prelude::*;
 
@@ -15,10 +17,10 @@ use crate::app_state::AppState;
 use crate::models::offers::Offer;
 use crate::schema::{offers, users};
 use crate::types::JsonField;
-use crate::users::{PublicUser, User};
+use crate::models::users::{PublicUser, User};
 use crate::validator::AuthContext; // Your Diesel schema
 
-#[get("/cleanup_unreferenced")] // @audit-ignore
+// #[get("/cleanup_unreferenced")] // @audit-ignore
 async fn cleanup_unreferenced(
     data: web::Data<AppState>,
     query: web::Query<std::collections::HashMap<String, String>>,
@@ -103,7 +105,7 @@ async fn cleanup_unreferenced(
     })))
 }
 
-#[post("")]
+// #[post("")]
 async fn upload(
     mut payload: Multipart,
     data: web::Data<AppState>,
@@ -159,8 +161,27 @@ async fn upload(
     Ok(HttpResponse::BadRequest().json(json!({"error": "No file found"})))
 }
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-    .service(upload)
-    .service(cleanup_unreferenced)
+    .service(register(
+            "upload",
+            Method::POST,
+            &full_path,
+            "",
+            upload,
+            crate::types::MemberRole::Member,
+        ))
+
+        // cleanup unused files (admin only)
+        .service(register(
+            "cleanup",
+            Method::GET,
+            &full_path,
+            "/cleanup_unreferenced",
+            cleanup_unreferenced,
+            crate::types::MemberRole::Admin,
+        ))
 }
+// .service(upload)
+//     .service(cleanup_unreferenced)

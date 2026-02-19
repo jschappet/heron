@@ -2,11 +2,12 @@
 use actix_web::{HttpResponse, Responder, Scope, delete, get, http::header::{ContentDisposition, DispositionParam, DispositionType}, post, put, web};
 use image::{ImageFormat, Luma};
 use serde::Deserialize;
-
+use crate::routes::register;
+use crate::types::method::Method;
 use crate::{app_state::AppState, models::ticket::{NewTicket, assign_ticket_db, create_ticket, delete_ticket, get_ticket, get_tickets, get_tickets_for_event, update_ticket}};
 
 // API Endpoints
-#[post("")]
+// #[post("")]
 pub async fn create_ticket_api(
     data: web::Data<AppState>,
     new_ticket: web::Json<NewTicket>,
@@ -20,7 +21,7 @@ pub async fn create_ticket_api(
 }
 
 
-#[get("/event/{new_event_id}")]
+// #[get("/event/{new_event_id}")]
 pub async fn get_tickets_for_event_api(
     data: web::Data<AppState>,
     new_event_id: web::Path<String>,
@@ -32,7 +33,7 @@ pub async fn get_tickets_for_event_api(
     }
 }
 
-#[get("")]
+// #[get("")]
 pub async fn get_tickets_api(data: web::Data<AppState>) -> impl Responder {
     let conn = &mut data.db_pool.get().expect("Database connection failed");
     match get_tickets(conn) {
@@ -41,7 +42,7 @@ pub async fn get_tickets_api(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-#[get("/{ticket_id}")]
+// #[get("/{ticket_id}")]
 pub async fn get_ticket_api(
     data: web::Data<AppState>,
     ticket_id: web::Path<String>,
@@ -53,7 +54,7 @@ pub async fn get_ticket_api(
     }
 }
 
-#[put("/{ticket_id}")]
+// #[put("/{ticket_id}")]
 pub async fn update_ticket_api(
     data: web::Data<AppState>,
     ticket_id: web::Path<String>,
@@ -68,7 +69,7 @@ pub async fn update_ticket_api(
 
 
 // QR Code Image Generation
-#[get("/{ticket_id}/qr")] 
+// #[get("/{ticket_id}/qr")] 
 pub async fn generate_qr_code(
     ticket_id: web::Path<String>,
 ) -> impl Responder {
@@ -92,7 +93,7 @@ pub async fn generate_qr_code(
 }
 
 
-#[delete("/{ticket_id}")]
+// #[delete("/{ticket_id}")]
 pub async fn delete_ticket_api(
     data: web::Data<AppState>,
     ticket_id: web::Path<String>,
@@ -112,7 +113,7 @@ pub struct AssignTicketRequest {
     event_id: String,
 }
  
-#[post("/assign-ticket")]
+// #[post("/assign-ticket")]
 async fn assign_ticket(
     data: web::Json<AssignTicketRequest>,
     app_data: web::Data<AppState>,
@@ -129,14 +130,81 @@ async fn assign_ticket(
 }
 
 
-pub fn scope() -> Scope {
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
     web::scope("")
-        .service(create_ticket_api)
-        .service(get_tickets_api)
-        .service(get_ticket_api)
-        .service(update_ticket_api)
-        .service(delete_ticket_api)
-        .service(generate_qr_code)
-        .service(assign_ticket)
-        .service(get_tickets_for_event_api)
+        .service(register(
+    "create_ticket",
+    Method::POST,
+    &full_path,
+    "",
+    create_ticket_api,
+    crate::types::MemberRole::Member,
+))
+.service(register(
+    "get_tickets",
+    Method::GET,
+    &full_path,
+    "",
+    get_tickets_api,
+    crate::types::MemberRole::Public,
+))
+.service(register(
+    "get_ticket",
+    Method::GET,
+    &full_path,
+    "{ticket_id}",
+    get_ticket_api,
+    crate::types::MemberRole::Public,
+))
+.service(register(
+    "get_tickets_for_event",
+    Method::GET,
+    &full_path,
+    "event/{new_event_id}",
+    get_tickets_for_event_api,
+    crate::types::MemberRole::Public,
+))
+.service(register(
+    "update_ticket",
+    Method::PUT,
+    &full_path,
+    "{ticket_id}",
+    update_ticket_api,
+    crate::types::MemberRole::Member,
+))
+.service(register(
+    "delete_ticket",
+    Method::DELETE,
+    &full_path,
+    "{ticket_id}",
+    delete_ticket_api,
+    crate::types::MemberRole::Admin,
+))
+.service(register(
+    "generate_ticket_qr",
+    Method::GET,
+    &full_path,
+    "{ticket_id}/qr",
+    generate_qr_code,
+    crate::types::MemberRole::Public,
+))
+.service(register(
+    "assign_ticket",
+    Method::POST,
+    &full_path,
+    "assign-ticket",
+    assign_ticket,
+    crate::types::MemberRole::Admin,
+))
+
 }
+
+// .service(create_ticket_api)
+//         .service(get_tickets_api)
+//         .service(get_ticket_api)
+//         .service(update_ticket_api)
+//         .service(delete_ticket_api)
+//         .service(generate_qr_code)
+//         .service(assign_ticket)
+//         .service(get_tickets_for_event_api)

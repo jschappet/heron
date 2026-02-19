@@ -123,21 +123,21 @@
     "found": true,
     "method": "GET",
     "path": "/",
-    "location": "src/routes/config.rs:27"
+    "location": "src/routes/config.rs:28"
   },
   {
     "fnName": "online",
     "found": true,
     "method": "GET",
     "path": "/ONLINE",
-    "location": "src/routes/config.rs:64"
+    "location": "src/routes/config.rs:69"
   },
   {
     "fnName": "ping",
     "found": true,
     "method": "GET",
     "path": "/ping",
-    "location": "src/routes/config.rs:88"
+    "location": "src/routes/config.rs:93"
   },
   {
     "fnName": "create_role_api",
@@ -278,90 +278,6 @@
     "method": "POST",
     "path": "/help_events",
     "location": "src/routes/offers_api.rs:117"
-  },
-  {
-    "fnName": "ping",
-    "found": true,
-    "method": "GET",
-    "path": "/doc_schema",
-    "location": "src/routes/drafts_api.rs:27"
-  },
-  {
-    "fnName": "create_draft_api",
-    "found": true,
-    "method": "POST",
-    "path": "/",
-    "location": "src/routes/drafts_api.rs:33"
-  },
-  {
-    "fnName": "get_drafts_api",
-    "found": true,
-    "method": "GET",
-    "path": "/",
-    "location": "src/routes/drafts_api.rs:92"
-  },
-  {
-    "fnName": "get_draft_api",
-    "found": true,
-    "method": "GET",
-    "path": "/{id}",
-    "location": "src/routes/drafts_api.rs:137"
-  },
-  {
-    "fnName": "update_draft_api",
-    "found": true,
-    "method": "POST",
-    "path": "/{id}",
-    "location": "src/routes/drafts_api.rs:147"
-  },
-  {
-    "fnName": "delete_draft_api",
-    "found": true,
-    "method": "DELETE",
-    "path": "/{id}",
-    "location": "src/routes/drafts_api.rs:167"
-  },
-  {
-    "fnName": "submit_draft_api",
-    "found": true,
-    "method": "POST",
-    "path": "/{id}/submit",
-    "location": "src/routes/drafts_api.rs:177"
-  },
-  {
-    "fnName": "request_changes_api",
-    "found": true,
-    "method": "POST",
-    "path": "/{id}/request_changes",
-    "location": "src/routes/drafts_api.rs:189"
-  },
-  {
-    "fnName": "approve_draft_api",
-    "found": true,
-    "method": "POST",
-    "path": "/{id}/approve",
-    "location": "src/routes/drafts_api.rs:221"
-  },
-  {
-    "fnName": "deploy_draft_api",
-    "found": true,
-    "method": "POST",
-    "path": "/{id}/deploy",
-    "location": "src/routes/drafts_api.rs:244"
-  },
-  {
-    "fnName": "get_draft_md_api",
-    "found": true,
-    "method": "GET",
-    "path": "/{id}/md",
-    "location": "src/routes/drafts_api.rs:394"
-  },
-  {
-    "fnName": "bulk_approve",
-    "found": true,
-    "method": "POST",
-    "path": "/bulk/approve",
-    "location": "src/routes/drafts_api.rs:409"
   },
   {
     "fnName": "get_ratings",
@@ -592,6 +508,13 @@
     "found": true,
     "method": "POST",
     "path": "/efforts",
+    "location": "src/routes/contribution_event.rs:13"
+  },
+  {
+    "fnName": "list_all_effort_context",
+    "found": true,
+    "method": "GET",
+    "path": "/",
     "location": "src/routes/contribution_event.rs:25"
   },
   {
@@ -599,7 +522,7 @@
     "found": true,
     "method": "POST",
     "path": "/efforts_off",
-    "location": "src/routes/contribution_event.rs:39"
+    "location": "src/routes/contribution_event.rs:62"
   },
   {
     "fnName": "get_sms_replies",
@@ -628,5 +551,89 @@
     "method": "GET",
     "path": "/sms_replies",
     "location": "src/routes/twillio_admin.rs:23"
+  },
+  {
+    "fnName": "get_doc_schema",
+    "found": true,
+    "method": "GET",
+    "path": "/doc_schema",
+    "location": "src/routes/drafts_api.rs:27"
+  },
+  {
+    "fnName": "create_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/",
+    "location": "src/routes/drafts_api.rs:33"
+  },
+  {
+    "fnName": "get_drafts_api",
+    "found": true,
+    "method": "GET",
+    "path": "/",
+    "location": "src/routes/drafts_api.rs:92"
+  },
+  {
+    "fnName": "get_draft_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{id}",
+    "location": "src/routes/drafts_api.rs:139"
+  },
+  {
+    "fnName": "update_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}",
+    "location": "src/routes/drafts_api.rs:149"
+  },
+  {
+    "fnName": "delete_draft_api",
+    "found": true,
+    "method": "DELETE",
+    "path": "/{id}",
+    "location": "src/routes/drafts_api.rs:169"
+  },
+  {
+    "fnName": "submit_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/submit",
+    "location": "src/routes/drafts_api.rs:179"
+  },
+  {
+    "fnName": "request_changes_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/request_changes",
+    "location": "src/routes/drafts_api.rs:191"
+  },
+  {
+    "fnName": "approve_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/approve",
+    "location": "src/routes/drafts_api.rs:223"
+  },
+  {
+    "fnName": "deploy_draft_api",
+    "found": true,
+    "method": "POST",
+    "path": "/{id}/deploy",
+    "location": "src/routes/drafts_api.rs:247"
+  },
+  {
+    "fnName": "get_draft_md_api",
+    "found": true,
+    "method": "GET",
+    "path": "/{id}/md",
+    "location": "src/routes/drafts_api.rs:398"
+  },
+  {
+    "fnName": "bulk_approve",
+    "found": true,
+    "method": "POST",
+    "path": "/bulk/approve",
+    "location": "src/routes/drafts_api.rs:419"
   }
 ]

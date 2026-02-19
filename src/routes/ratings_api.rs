@@ -1,7 +1,9 @@
 use actix_web::{HttpResponse, Responder, Scope, get, post, web};
+use crate::routes::register;
+use crate::types::method::Method;
 
-#[get("/all")]
-pub async fn get_ratings(data: web::Data<crate::AppState>) -> impl Responder {
+// #[get("/all")]
+pub async fn get_ratings(data: web::Data<crate::app_state::AppState>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
 
     log::info!("Fetching all ratings");
@@ -27,9 +29,9 @@ pub struct RatingInput {
     pub review: Option<String>,
 }
 
-#[post("/save")]
+// #[post("/save")]
 pub async fn save_ratings(
-    data: web::Data<crate::AppState>,
+    data: web::Data<crate::app_state::AppState>,
     //input_rating_type: web::Path<String>,
     in_rating: web::Json<RatingInput>,
     auth_context: AuthContext,
@@ -76,8 +78,8 @@ use crate::validator::AuthContext;
 // Returns full aggregated table
 // ======================================================
 
-#[get("/summary/array")]
-pub async fn get_summaries_array(data: web::Data<crate::AppState>) -> impl Responder {
+// #[get("/summary/array")]
+pub async fn get_summaries_array(data: web::Data<crate::app_state::AppState>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
 
     match get_all_summaries(&mut conn) {
@@ -94,8 +96,8 @@ pub async fn get_summaries_array(data: web::Data<crate::AppState>) -> impl Respo
 // Runs full aggregation job
 // ======================================================
 
-#[post("/rebuild-summary")]
-pub async fn rebuild_summary_route(data: web::Data<crate::AppState>) -> impl Responder {
+// #[post("/rebuild-summary")]
+pub async fn rebuild_summary_route(data: web::Data<crate::app_state::AppState>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
 
     match rebuild_rating_summary(&mut conn) {
@@ -107,8 +109,8 @@ pub async fn rebuild_summary_route(data: web::Data<crate::AppState>) -> impl Res
     }
 }
 
-#[get("/summary/all")]
-pub async fn get_summaries(data: web::Data<crate::AppState>) -> impl Responder {
+// #[get("/summary/all")]
+pub async fn get_summaries(data: web::Data<crate::app_state::AppState>) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
 
     match get_summary_map(&mut conn) {
@@ -121,10 +123,53 @@ pub async fn get_summaries(data: web::Data<crate::AppState>) -> impl Responder {
 }
 
 
-pub fn scope() -> Scope {
-    web::scope("").service(get_ratings)
-        .service(save_ratings)
-        .service(get_summaries)
-        .service(rebuild_summary_route)
+pub fn scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");  
+    web::scope("")
+.service(register(
+    "get_all_ratings",
+    Method::GET,
+    &full_path,
+    "all",
+    get_ratings,
+    crate::types::MemberRole::Public,
+))
+.service(register(
+    "save_rating",
+    Method::POST,
+    &full_path,
+    "save",
+    save_ratings,
+    crate::types::MemberRole::Member,
+))
+.service(register(
+    "get_summaries_array",
+    Method::GET,
+    &full_path,
+    "summary/array",
+    get_summaries_array,
+    crate::types::MemberRole::Public,
+))
+.service(register(
+    "rebuild_rating_summary",
+    Method::POST,
+    &full_path,
+    "rebuild-summary",
+    rebuild_summary_route,
+    crate::types::MemberRole::Admin,
+))
+.service(register(
+    "get_summaries_map",
+    Method::GET,
+    &full_path,
+    "summary/all",
+    get_summaries,
+    crate::types::MemberRole::Public,
+))
 
 }
+
+// .service(get_ratings)
+//         .service(save_ratings)
+//         .service(get_summaries)
+        // .service(rebuild_summary_route)

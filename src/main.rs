@@ -37,10 +37,14 @@ use crate::middleware::host::{HostMiddleware, HostMiddlewareService};
 use crate::models::users::{self};
 use crate::app_state::AppState;
 use crate::services::contribute_events::ContributionDomain;
+use crate::services::hosts::HostDomain;
 use crate::settings::Settings;
 
 
 use actix_identity::{IdentityMiddleware};
+
+use std::sync::Mutex;
+use crate::routes::{api_scope, Route, routes};
 
 mod db;
 
@@ -80,10 +84,23 @@ async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
 
 
+
     let settings = Settings::new()
         .expect("Config failed to load");
 
+// 2️⃣ Print route registry after scopes are built
+// {
+//     let api = routes::api_scope("/api");
 
+//     let r = routes().lock().unwrap();
+//     println!("Registered routes at startup:");
+//     for route in r.iter() {
+//         println!(
+//             "{} {} -> {} (auth={:?}) [{}:{}]",
+//             route.method, route.url(), route.key, route.roles, "",""
+//         );
+//     }
+// }
     
     env_logger::Builder::from_env(Env::default().default_filter_or(settings.debug.clone())).init();
     log::info!("Starting server...");
@@ -120,7 +137,21 @@ async fn main() -> std::io::Result<()> {
     let session_key = settings.web_config.cookie_key.clone();
         
     let contribution_domain = ContributionDomain::new(pool.clone());
+    let host_domain = HostDomain::new(pool.clone());
+
     //let admin_middleware = AdminMiddleware::new();
+    // {
+    //     let r = routes().lock().unwrap();
+    //     println!("Registered routes at startup:");
+    //     for route in r.iter() {
+    //     println!(
+    //         "{} {} -> {} (auth={:?}) [{}:{}]",
+    //         route.method, route.url(), route.key, route.roles, "",""
+    //     );
+    // }
+    // }
+
+
 
     HttpServer::new(move || {
 
@@ -143,6 +174,7 @@ async fn main() -> std::io::Result<()> {
         let mut app = App::new()
             .wrap(HostMiddleware::new(app_state.db_pool.clone()))
             .app_data(web::Data::new(contribution_domain.clone())) // inject domain
+            .app_data(web::Data::new(host_domain.clone())) // inject domain
 
             .wrap(mw::Logger::default())
             .wrap(session_middleware)
@@ -151,7 +183,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(app_state.clone()))
             //.app_data(web::Data::new(app_state.db_pool.clone()))
             
-            .service(routes::api_scope())
+            .service(routes::api_scope("/api"))
+            
             //.wrap(admin_middleware)
             //.service(routes::admin_scope())
             //.configure(routes::authentication::config)
