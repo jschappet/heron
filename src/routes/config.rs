@@ -110,15 +110,19 @@ pub struct Capability {
 }
 
 
-pub async fn capabilities(user: AuthContext) -> impl Responder {
-    let role_list = user.get_roles();
+pub async fn capabilities(user: Option<AuthContext>) -> impl Responder {
+    
+    let roles = match user {
+        Some(ref ctx) => ctx.get_roles(),
+        None => vec![MemberRole::Public],
+    };
 
     let routes = {
         let guard = routes().lock().unwrap();
 
         guard
             .iter()
-            .filter(|r| role_allows(&role_list, &r.roles))
+            .filter(|r| role_allows(&roles, &r.roles))
             .map(|r| Capability {
                 key: r.key,
                 url: r.url(),

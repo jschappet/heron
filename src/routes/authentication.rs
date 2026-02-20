@@ -140,6 +140,8 @@ async fn login(
 }
 
 async fn logout(session: Session) -> Result<HttpResponse, AppError> {
+    log::debug!("Logging User out");
+
     session.remove("user_id");
     session.purge();
 

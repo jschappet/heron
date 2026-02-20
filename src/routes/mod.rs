@@ -24,8 +24,8 @@ pub mod contribution_event;
 pub mod events_api;
 pub mod mailing_list;
 pub mod ticket_api;
-pub mod twillio;
-pub mod twillio_admin;
+pub mod twilio;
+pub mod twilio_admin;
 pub mod weekly_answers;
 
 pub mod hosts;
@@ -227,7 +227,7 @@ pub fn api_scope(path: &'static str) -> Scope {
         .service(scoped("/mail", "mail", Some(MemberRole::Public),mailing_list::scope(vec![path, "mail"])))
         .service(scoped("/celebrate","celebrate", Some(MemberRole::Public), contribution_event::scope(vec![path, "celebrate"])))
         // Twilio integration example
-        .service(scoped("/twillio", "twillio", Some(MemberRole::Public),twillio::scope(vec![path, "twillio"])))
+        .service(scoped("/twilio", "twilio", Some(MemberRole::Public),twilio::scope(vec![path, "twilio"])))
         
         .service(
     web::scope("/admin")
@@ -248,6 +248,7 @@ pub fn admin_scope() -> Scope {
         .service(scoped("/drafts","drafts", None,  drafts_api::scope(vec![path, "drafts"])))
         .service(scoped("/memberships","memberships", None,  memberships_api::admin_scope(vec![path, "membership"])))
         .service(scoped("/hosts", "hosts", None, hosts::admin_scope( vec![path, "hosts"] )))
+        .service(scoped("/users", "users", None, users_api::admin_scope( vec![path, "users"] )))
 
 }
 

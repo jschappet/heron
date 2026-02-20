@@ -98,6 +98,8 @@ pub async fn get_drafts_api(
     req: HttpRequest,
     query: web::Query<DraftQuery>,
 ) -> Result<HttpResponse, AuthError> {
+        log::debug!("Draft Query: {:?}", query);
+
     let mut conn = data.db_pool.get().unwrap();
     let host_id = require_host_id(&req).await.unwrap(); // safe fallback exists
 
@@ -442,7 +444,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             &full_path,
             "doc_schema",
             get_doc_schema,
-            MemberRole::Public,
+            MemberRole::Member,
         ))
         // Create & List
         .service(register(
@@ -457,7 +459,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             "draft_list",
             Method::GET,
             &full_path,
-            "",
+            "list",
             get_drafts_api,
             MemberRole::Member,
         ))
@@ -484,7 +486,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             &full_path,
             "{id}",
             delete_draft_api,
-            MemberRole::Member,
+            MemberRole::Admin,
         ))
         // Workflow Actions
         .service(register(

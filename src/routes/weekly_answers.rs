@@ -448,7 +448,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
     web::scope("")
     // POST / (submit weekly answers)
 .service(register(
-    "submit_weekly_answers",
+    "weekly_answers_submit", 
     Method::POST,
     &full_path,
     "",

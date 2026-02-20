@@ -61,7 +61,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
     let full_path = parent_path.join("/");
     web::scope("")
         .service(register(
-            "create_role",
+            "role_create",
             Method::POST,
             &full_path,
             "",
@@ -69,15 +69,15 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Admin,
         ))
         .service(register(
-            "get_roles",
+            "roles_list",
             Method::GET,
             &full_path,
-            "",
+            "list",
             get_roles_api,
             crate::types::MemberRole::Admin,
         ))
         .service(register(
-            "get_role",
+            "role_get",
             Method::GET,
             &full_path,
             "{id}",
@@ -85,7 +85,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Admin,
         ))
         .service(register(
-            "update_role",
+            "role_update",
             Method::PUT,
             &full_path,
             "{id}",
@@ -93,7 +93,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Admin,
         ))
         .service(register(
-            "delete_role",
+            "role_delete",
             Method::DELETE,
             &full_path,
             "{id}",

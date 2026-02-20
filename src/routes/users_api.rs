@@ -262,7 +262,7 @@ async fn set_password_new(
 pub fn scope(parent_path: Vec<&str>) -> Scope {
     let full_path = parent_path.join("/");
     web::scope("")
-    .service(register(
+        .service(register(
             "create",
             Method::POST,
             &full_path,
@@ -271,15 +271,6 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Admin,
         ))
 
-        // list users (json)
-        .service(register(
-            "list",
-            Method::GET,
-            &full_path,
-            "",
-            get_users_api,
-            crate::types::MemberRole::Admin,
-        ))
 
         // users HTML page (admin/debug)
         .service(register(
@@ -331,15 +322,6 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Admin,
         ))
 
-        // delete user
-        .service(register(
-            "delete",
-            Method::DELETE,
-            &full_path,
-            "/{user_id}",
-            delete_user_api,
-            crate::types::MemberRole::Admin,
-        ))
 
         // update own details
         .service(register(
@@ -399,7 +381,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
     let full_path = parent_path.join("/");
     web::scope("")
    .service(register(
-            "create",
+            "user_create",
             Method::POST,
             &full_path,
             "",
@@ -409,17 +391,17 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 
         // list users (json)
         .service(register(
-            "list",
+            "user_list",
             Method::GET,
             &full_path,
-            "",
+            "list",
             get_users_api,
             crate::types::MemberRole::Admin,
         ))
 
         // users HTML page (admin/debug)
         .service(register(
-            "page",
+            "user_page",
             Method::GET,
             &full_path,
             "/page",
@@ -429,7 +411,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 
         // public directory list
         .service(register(
-            "public_list",
+            "user_public_list",
             Method::GET,
             &full_path,
             "/public_profile",
@@ -439,7 +421,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 
         // single public profile
         .service(register(
-            "public_one",
+            "user_public_one",
             Method::GET,
             &full_path,
             "/public_profile/user/{user_id}",
@@ -449,7 +431,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 
         // get one user
         .service(register(
-            "get",
+            "user_get",
             Method::GET,
             &full_path,
             "/{user_id}",
@@ -459,7 +441,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 
         // update user
         .service(register(
-            "update",
+            "user_update",
             Method::PUT,
             &full_path,
             "/{user_id}",
@@ -469,7 +451,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 
         // delete user
         .service(register(
-            "delete",
+            "user_delete",
             Method::DELETE,
             &full_path,
             "/{user_id}",
@@ -479,7 +461,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 
         // update own details
         .service(register(
-            "details",
+            "user_details",
             Method::POST,
             &full_path,
             "/details",
