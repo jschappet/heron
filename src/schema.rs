@@ -102,6 +102,7 @@ diesel::table! {
         confirmation_token -> Nullable<Text>,
         unsubscribed -> Bool,
         created_at -> Timestamp,
+        message -> Nullable<Text>,
     }
 }
 

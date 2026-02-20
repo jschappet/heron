@@ -437,7 +437,14 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
     let full_path = parent_path.join("/");
 
     web::scope("")
-        // Schema
+        .service(register(
+            "draft_bulk_approve",
+            Method::POST,
+            &full_path,
+            "bulk/approve",
+            bulk_approve,
+            MemberRole::Admin,
+        ))// Schema
         .service(register(
             "draft_doc_schema",
             Method::GET,
@@ -532,14 +539,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             MemberRole::Member,
         ))
         // Bulk Approval
-        .service(register(
-            "draft_bulk_approve",
-            Method::POST,
-            &full_path,
-            "bulk/approve",
-            bulk_approve,
-            MemberRole::Reviewer,
-        ))
+        
 }
 
 // .service(get_doc_schema)

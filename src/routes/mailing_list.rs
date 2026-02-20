@@ -2,6 +2,7 @@ use actix_web::{HttpRequest, HttpResponse, Responder, Scope, get, post, web};
 //use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
 use chrono::{NaiveDateTime, Utc, Duration};
 use diesel::prelude::*;
+use crate::errors::app_error::AppError;
 use crate::routes::register;
 use crate::types::method::Method;
 //use diesel::sqlite::SqliteConnection;
@@ -37,6 +38,8 @@ pub struct Subscriber {
     pub confirmation_token: Option<String>,
     pub unsubscribed: bool,
     pub created_at: NaiveDateTime,
+    pub message: Option<String>,
+
 }
 
 #[derive(Debug, Insertable)]
@@ -46,6 +49,8 @@ pub struct NewSubscriber<'a> {
     pub name: &'a str,
     pub email: &'a str,
     pub confirmation_token: Option<&'a str>,
+    pub message: Option<String>,
+
 }
 
 #[derive(Deserialize)]
@@ -53,6 +58,7 @@ pub struct SubscribeForm {
     pub name: String,
     pub email: String,
     pub nickname: Option<String>, // honeypot
+    pub message: Option<String>,
 }
 
 
@@ -129,6 +135,8 @@ async fn subscribe(
                 unsubscribed.eq(false),
                 confirmed.eq(false),
                 host_id.eq(incoming_host_id),
+                message.eq(&form.message),
+
             ))
             .execute(&mut conn)
             .expect("DB update error");
@@ -138,6 +146,7 @@ async fn subscribe(
             email: &form.email,
             confirmation_token: Some(&token),
             host_id: incoming_host_id,
+            message: form.message.clone(),
         };
         diesel::insert_into(mailing_list_subscribers)
             .values(&new_sub)
@@ -188,21 +197,32 @@ async fn unsubscribe(
     HttpResponse::BadRequest().body("Invalid or expired unsubscribe link.")
 }
 
+
+#[derive(Debug, Serialize, Queryable, Selectable)]
+#[diesel(table_name = crate::schema::mailing_list_subscribers)]
+pub struct SubscriberView {
+    pub name: String,
+    pub email: String,
+    pub created_at: NaiveDateTime,
+    pub message: Option<String>,
+}
+
 async fn list_subscribers(
     req: HttpRequest,
     _auth: AuthContext,
     data: web::Data<AppState>
-    ) -> impl Responder {
+    ) -> Result<HttpResponse, AppError> {
         // Get host ID — always returns a valid ID now
     let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
-
+    
     let mut conn = data.db_pool.get().expect("DB connection failed");
     let subs = mailing_list_subscribers
-        .order(created_at.desc())
-        .filter(host_id.eq(incoming_host_id))
-        .load::<Subscriber>(&mut conn)
-        .expect("DB query error");
-    HttpResponse::Ok().json(subs)
+    .filter(host_id.eq(incoming_host_id))
+    .order(created_at.desc())
+    .select(SubscriberView::as_select())
+    .load::<SubscriberView>(&mut conn)?;
+
+    Ok(HttpResponse::Ok().json(subs))
 }
 
 pub fn send_templated_email<T: serde::Serialize>(
@@ -222,7 +242,7 @@ pub fn send_templated_email<T: serde::Serialize>(
     let html_body = handlebars.render("html", context)?;
     let text_body = handlebars.render("text", context)?;
 
-    let message = Message::builder()
+    let in_message = Message::builder()
         .from(settings.email.smtp_from_email.parse()?)
         .to(Mailbox::new(Some(user_name.to_string()), to_email.parse()?))
         .subject(subject)
@@ -240,7 +260,7 @@ pub fn send_templated_email<T: serde::Serialize>(
         ).into())
         .build();
 
-    mailer.send(&message)?;
+    mailer.send(&in_message)?;
     Ok(())
 }
 
@@ -510,8 +530,14 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
     crate::types::MemberRole::Public,
 ))
 
+}
+
+
 // GET /mailing_list
-.service(register(
+pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
+    let full_path = parent_path.join("/");
+    web::scope("")
+    .service(register(
     "list_subscribers",
     Method::GET,
     &full_path,
@@ -520,6 +546,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
     crate::types::MemberRole::Admin,
 ))
 }
+
 // .service(subscribe)
 //         .service(confirm)
 //         .service(unsubscribe)

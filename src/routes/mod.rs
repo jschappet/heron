@@ -249,6 +249,7 @@ pub fn admin_scope() -> Scope {
         .service(scoped("/memberships","memberships", None,  memberships_api::admin_scope(vec![path, "membership"])))
         .service(scoped("/hosts", "hosts", None, hosts::admin_scope( vec![path, "hosts"] )))
         .service(scoped("/users", "users", None, users_api::admin_scope( vec![path, "users"] )))
+        .service(scoped("/mail", "mail", Some(MemberRole::Admin),mailing_list::admin_scope(vec![path, "mail"])))
 
 }
 
