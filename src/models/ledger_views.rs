@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 pub struct VitalSigns {
     pub dollars_available: f64,
     pub active_contributors_30d: i32,

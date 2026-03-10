@@ -61,7 +61,7 @@ pub struct EntityUser {
     pub created_at: NaiveDateTime,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, AsChangeset)]
 #[diesel(table_name = entity_users)]
 pub struct NewEntityUser<'a> {
     pub entity_id: &'a str,
