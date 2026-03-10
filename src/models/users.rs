@@ -262,6 +262,7 @@ pub fn authenticate_user(
     let user = users_dsl
         .filter(users::username.eq(usrname))
         .first::<User>(conn)?;
+    log::debug!("Got User: {:?}", user);
     if verify(password, &user.password_hash).expect("Failed to verify password") {
         Ok(user)
     } else {

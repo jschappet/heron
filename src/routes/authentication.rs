@@ -163,7 +163,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             "register_new_user",
             Method::POST,
             &full_path,
-            "",
+            "register",
             register_new_user,
             crate::types::MemberRole::Public,
         ))

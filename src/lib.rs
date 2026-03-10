@@ -10,7 +10,7 @@ pub mod models;
 pub mod errors;
 pub mod test_support;
 pub mod middleware;
-
+pub mod domains;
 pub mod mailmerge;
 pub mod app_state;
 

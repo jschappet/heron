@@ -53,6 +53,7 @@ diesel::table! {
         reviewed_at -> Nullable<Timestamp>,
         review_notes -> Nullable<Text>,
         details -> Nullable<Text>,
+        host_id -> Integer,
     }
 }
 
@@ -69,6 +70,39 @@ diesel::table! {
 }
 
 diesel::table! {
+    entities (id) {
+        id -> Text,
+        name -> Text,
+        entity_type -> Text,
+        host_id -> Integer,
+        created_by -> Text,
+        created_at -> Timestamp,
+        details -> Text,
+    }
+}
+
+diesel::table! {
+    entity_aliases (id) {
+        id -> Text,
+        entity_id -> Text,
+        alias -> Text,
+        created_by -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    entity_users (id) {
+        id -> Integer,
+        entity_id -> Text,
+        user_id -> Integer,
+        role -> Text,
+        status -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     events (id) {
         id -> Text,
         name -> Text,
@@ -77,6 +111,34 @@ diesel::table! {
         end_time -> Timestamp,
         location -> Text,
         created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    flow_actions (id) {
+        id -> Text,
+        flow_id -> Text,
+        action_type -> Text,
+        actor_entity -> Text,
+        timestamp -> Timestamp,
+        details -> Text,
+    }
+}
+
+diesel::table! {
+    flow_events (id) {
+        id -> Text,
+        timestamp -> Timestamp,
+        recorded_at -> Timestamp,
+        from_entity -> Text,
+        to_entity -> Text,
+        host_id -> Integer,
+        resource_type -> Text,
+        quantity_value -> Float,
+        quantity_unit -> Text,
+        notes -> Nullable<Text>,
+        details -> Text,
+        created_by -> Text,
     }
 }
 
@@ -136,7 +198,7 @@ diesel::table! {
 
 diesel::table! {
     question_summaries (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         question_uuid -> Text,
         answers_count -> Integer,
         question_text -> Text,
@@ -286,12 +348,12 @@ diesel::table! {
 
 diesel::table! {
     weekly_answers (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         name -> Text,
         email -> Text,
         question_uuid -> Text,
         answer -> Text,
-        created_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
     }
 }
 
@@ -300,6 +362,13 @@ diesel::joinable!(completed_offers -> users (reviewer_id));
 diesel::joinable!(contribution_events -> contributors (contributor_id));
 diesel::joinable!(contribution_events -> effort_contexts (context_id));
 diesel::joinable!(contributors -> users (user_id));
+diesel::joinable!(entities -> hosts (host_id));
+diesel::joinable!(entity_aliases -> entities (entity_id));
+diesel::joinable!(entity_users -> entities (entity_id));
+diesel::joinable!(entity_users -> users (user_id));
+diesel::joinable!(flow_actions -> entities (actor_entity));
+diesel::joinable!(flow_actions -> flow_events (flow_id));
+diesel::joinable!(flow_events -> hosts (host_id));
 diesel::joinable!(mailing_list_subscribers -> hosts (host_id));
 diesel::joinable!(memberships -> hosts (host_id));
 diesel::joinable!(memberships -> roles (role_id));
@@ -321,7 +390,12 @@ diesel::allow_tables_to_appear_in_same_query!(
     contributors,
     drafts,
     effort_contexts,
+    entities,
+    entity_aliases,
+    entity_users,
     events,
+    flow_actions,
+    flow_events,
     hosts,
     mailing_list_subscribers,
     memberships,

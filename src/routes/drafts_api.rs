@@ -1,6 +1,7 @@
 use crate::app_state::AppState;
 use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
+use crate::middleware::host::{self, HostContext};
 use crate::middleware::host_utils::require_host_id;
 use crate::models::drafts::*;
 use crate::types::{DocType, DraftStatus, FrontendSchema, MemberRole, load_frontend_schema};
@@ -37,11 +38,12 @@ pub async fn create_draft_api(
     data: web::Data<AppState>,
     new: web::Json<NewDraft>,
     auth_context: AuthContext,
+    host: HostContext,
 ) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
     let mut new = new.into_inner();
     new.submitted_by = Some(auth_context.user_id);
-
+    new.host_id = host.0.id;
     match create_draft(&mut conn, &new) {
         Ok(draft) => HttpResponse::Ok().json(draft),
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
@@ -74,6 +76,8 @@ pub struct DraftQuery {
     pub author: Option<String>,
     pub dateFrom: Option<String>,
     pub dateTo: Option<String>,
+    #[serde(default)]
+    pub host_id: i32,
 }
 
 use serde::Serialize;
@@ -95,13 +99,16 @@ pub struct DraftsResponse<T> {
 pub async fn get_drafts_api(
     data: web::Data<AppState>,
     admin_context: AuthContext,
-    req: HttpRequest,
+    host: HostContext,
+    //req: HttpRequest,
     query: web::Query<DraftQuery>,
 ) -> Result<HttpResponse, AuthError> {
-        log::debug!("Draft Query: {:?}", query);
+    log::debug!("Draft Query: {:?}", query);
 
     let mut conn = data.db_pool.get().unwrap();
-    let host_id = require_host_id(&req).await.unwrap(); // safe fallback exists
+    let host_id = host.0.id;
+    let mut query = query.0;
+    query.host_id = host_id;
 
     log::debug!("Draft Query: {:?}", query);
 
@@ -117,7 +124,7 @@ pub async fn get_drafts_api(
         Some(admin_context.user_id)
     };
 
-    let mut filter = DraftFilter::from(query.0);
+    let mut filter = DraftFilter::from(query);
     filter.submitted_by = user_filter;
 
     let drafts = get_drafts_filtered(&mut conn, filter)
@@ -156,10 +163,14 @@ pub async fn update_draft_api(
     id: web::Path<i32>,
     auth_context: AuthContext,
     updated: web::Json<NewDraft>,
+    host: HostContext,
+
 ) -> impl Responder {
+    log::debug!("Updating Draft");
     let mut conn = data.db_pool.get().unwrap();
     let mut updated = updated.into_inner();
     updated.submitted_by = Some(auth_context.user_id);
+    updated.host_id = host.0.id;
 
     log::info!("Updating draft ID: {} {}", id, updated.title);
 
@@ -181,12 +192,18 @@ pub async fn delete_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> 
 
 // Submit draft
 //#[post("/{id}/submit")]
-pub async fn submit_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
+pub async fn submit_draft_api(
+    data: web::Data<AppState>, 
+    id: web::Path<i32>,
+    
+) -> impl Responder {
     let mut conn = data.db_pool.get().unwrap();
-
+    
     log::info!("Submitting draft ID: {}", id);
     match submit_draft(&mut conn, id.into_inner()) {
-        Ok(draft) => HttpResponse::Ok().json(draft),
+        Ok( draft) => {       
+            HttpResponse::Ok().json(draft)
+        },
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
@@ -306,8 +323,65 @@ fn format_frontmatter_scalar(key: &str, v: &str) -> String {
 }
 
 use serde_json::Value;
+use serde_yaml;
+use std::collections::BTreeMap;
 
 fn generate_frontmatter(draft: &Draft) -> String {
+    // Start with a BTreeMap to preserve order of top-level fields
+    let mut root: BTreeMap<String, Value> = BTreeMap::new();
+    let author = draft.author.clone().unwrap_or_default();
+
+    // Top-level fields (columns)
+    root.insert("title".to_string(), Value::String(draft.title.clone()));
+    root.insert("author".to_string(), Value::String(author));
+    root.insert(
+        "doc_type".to_string(),
+        Value::String(draft.doc_type.value().to_string()),
+    );
+
+    // Optional description
+    if let Some(desc) = &draft.description {
+        root.insert("description".to_string(), Value::String(desc.clone()));
+    }
+
+    let tags_yaml = match &draft.tags {
+        Some(tags_str) => {
+            // Try to parse JSON array first
+            if let Ok(arr) = serde_json::from_str::<Vec<String>>(tags_str) {
+                arr.iter().map(|s| Value::String(s.clone())).collect()
+            } else {
+                // Fallback: split by comma
+                tags_str
+                    .split(',')
+                    .map(|s| Value::String(s.trim().to_string()))
+                    .collect()
+            }
+        }
+        None => Vec::new(),
+    };
+    root.insert("tags".to_string(), Value::Array(tags_yaml));
+
+    // Merge nested meta
+    if let Some(meta) = &draft.meta {
+        if let Value::Object(map) = &meta.0 {
+            for (k, v) in map {
+                //let key_string = k.clone();     // owned String
+
+                root.insert(k.to_string(), v.clone());
+            }
+        }
+    }
+
+    // Serialize whole structure to YAML
+    let yaml_body = serde_yaml::to_string(&root).expect("Failed to serialize YAML");
+
+    // Wrap in frontmatter ---
+    format!("---\n{}---\n\n", yaml_body)
+}
+
+//use serde_json::Value;
+
+fn _generate_frontmatter_old(draft: &Draft) -> String {
     // Parse meta JSON if present
     let meta: Value = draft
         .meta
@@ -316,13 +390,13 @@ fn generate_frontmatter(draft: &Draft) -> String {
         .unwrap_or(Value::Null);
     log::debug!("Meta: {:?}", meta);
     // Determine frontmatter layout and fields based on doc_type
-    let layout = draft.doc_type.value();
+    //let layout = draft.doc_type.value();
 
     // Base fields: title, description, author
     let mut fm_lines = vec![
-        format!(r#"title: "{}""#, draft.title),
-        format!(r#"description: "{}""#, opt_str(&draft.description)),
-        format!(r#"author: "{}""#, opt_str(&draft.author)),
+        //format!(r#"title: "{}""#, draft.title),
+        //format!(r#"description: "{}""#, opt_str(&draft.description)),
+        //format!(r#"author: "{}""#, opt_str(&draft.author)),
     ];
 
     // Tags
@@ -384,7 +458,7 @@ fn generate_frontmatter(draft: &Draft) -> String {
     }
 
     // Layout
-    fm_lines.push(format!(r#"layout: "{}""#, layout));
+    //fm_lines.push(format!(r#"layout: "{}""#, layout));
 
     // Join lines into YAML frontmatter
     let frontmatter = format!("---\n{}\n---\n\n", fm_lines.join("\n"));
@@ -444,7 +518,15 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             "bulk/approve",
             bulk_approve,
             MemberRole::Admin,
-        ))// Schema
+        )) // Schema
+        .service(register(
+            "draft_update",
+            Method::POST,
+            &full_path,
+            "update/{id}",
+            update_draft_api,
+            MemberRole::Member,
+        ))
         .service(register(
             "draft_doc_schema",
             Method::GET,
@@ -458,7 +540,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             "draft_create",
             Method::POST,
             &full_path,
-            "",
+            "new",
             create_draft_api,
             MemberRole::Member,
         ))
@@ -477,14 +559,6 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             &full_path,
             "{id}",
             get_draft_api,
-            MemberRole::Member,
-        ))
-        .service(register(
-            "draft_update",
-            Method::POST,
-            &full_path,
-            "{id}",
-            update_draft_api,
             MemberRole::Member,
         ))
         .service(register(
@@ -538,8 +612,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             get_draft_md_api,
             MemberRole::Member,
         ))
-        // Bulk Approval
-        
+    // Bulk Approval
 }
 
 // .service(get_doc_schema)

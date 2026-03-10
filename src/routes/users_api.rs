@@ -194,7 +194,7 @@ async fn get_reset_password_page(token: web::Path<String>,
 
 
 // #[post("/reset-password")]
-async fn reset_password_token(
+async fn create_token_reset_password(
     data: web::Data<AppState>,
     req: HttpRequest,
     payload: web::Json<ResetPasswordRequest>,
@@ -261,7 +261,27 @@ async fn set_password_new(
 
 pub fn scope(parent_path: Vec<&str>) -> Scope {
     let full_path = parent_path.join("/");
+          
     web::scope("")
+    // reset password verification redirect
+        .service(register(
+            "create_token_reset_password",
+            Method::POST,
+            &full_path,
+            "reset-password-request",
+            create_token_reset_password,
+            crate::types::MemberRole::Public,
+        ))
+  
+        // set new password
+        .service(register(
+            "set_password",
+            Method::POST,
+            &full_path,
+            "/set-password",
+            set_password_new,
+            crate::types::MemberRole::Public,
+        ))
         .service(register(
             "create",
             Method::POST,
@@ -333,19 +353,12 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Member,
         ))
 
-        // reset password request (public)
-        .service(register(
-            "reset_password",
-            Method::POST,
-            &full_path,
-            "/reset-password",
-            reset_password_token,
-            crate::types::MemberRole::Public,
-        ))
+        
 
-        // reset password verification redirect
+        
+                // reset password request (public)
         .service(register(
-            "reset_password_verify",
+            "reset_password_with_token",
             Method::GET,
             &full_path,
             "/reset-password/{token}",
@@ -353,15 +366,6 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Public,
         ))
 
-        // set new password
-        .service(register(
-            "set_password",
-            Method::POST,
-            &full_path,
-            "/set-password",
-            set_password_new,
-            crate::types::MemberRole::Public,
-        ))
 }
 
         // .service(create_user_api)
@@ -469,35 +473,8 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
             crate::types::MemberRole::Member,
         ))
 
-        // reset password request (public)
-        .service(register(
-            "reset_password",
-            Method::POST,
-            &full_path,
-            "/reset-password",
-            reset_password_token,
-            crate::types::MemberRole::Public,
-        ))
 
-        // reset password verification redirect
-        .service(register(
-            "reset_password_verify",
-            Method::GET,
-            &full_path,
-            "/reset-password/{token}",
-            get_reset_password_page,
-            crate::types::MemberRole::Public,
-        ))
-
-        // set new password
-        .service(register(
-            "set_password",
-            Method::POST,
-            &full_path,
-            "/set-password",
-            set_password_new,
-            crate::types::MemberRole::Public,
-        ))
+        
 }
 
     //  .service(create_user_api)

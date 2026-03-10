@@ -29,39 +29,32 @@ mod middleware;
 //use diesel::r2d2::{self, ConnectionManager};
 use diesel::SqliteConnection;
 use handlebars::Handlebars;
+use crate::domains::ledger_domain::LedgerDomain;
 //use registration::{create_registration, update_registration_user_id, get_registrations, NewRegistration, RegisterQuery};
 mod mailmerge;
 mod app_state;
 use crate::db::run_migrations;
-use crate::middleware::host::{HostMiddleware, HostMiddlewareService};
-use crate::models::users::{self};
+use crate::middleware::host::HostMiddleware;
+//use crate::models::users::{self};
 use crate::app_state::AppState;
 use crate::services::contribute_events::ContributionDomain;
 use crate::services::hosts::HostDomain;
-use crate::settings::Settings;
 
+
+use crate::settings::Settings;
+mod domains;
+use crate::domains::weekly_reflection_domain::WeeklyReflectionDomain;
 
 use actix_identity::{IdentityMiddleware};
 
-use std::sync::Mutex;
-use crate::routes::{api_scope, Route, routes};
 
 mod db;
 
 
-//use actix_web_httpauth::middleware::HttpAuthentication;
 use env_logger::Env;
 use std::sync::Arc;
 mod validator;
 
-/* #[allow(deprecated)]
-async fn not_found() -> impl Responder {
-
-    let file = NamedFile::open("../dist/404.html").unwrap()
-        .set_status_code(StatusCode::NOT_FOUND);
-    
-    file
-} */
 
 async fn not_found() -> impl Responder {
     let body_text = match std::fs::read_to_string("./webroot/404.html") {
@@ -139,6 +132,10 @@ async fn main() -> std::io::Result<()> {
     let contribution_domain = ContributionDomain::new(pool.clone());
     let host_domain = HostDomain::new(pool.clone());
 
+    let weekly_reflection_domain = WeeklyReflectionDomain::new(pool.clone());
+    let ledger_domain = LedgerDomain::new(pool.clone());
+
+
     //let admin_middleware = AdminMiddleware::new();
     // {
     //     let r = routes().lock().unwrap();
@@ -173,8 +170,11 @@ async fn main() -> std::io::Result<()> {
 
         let mut app = App::new()
             .wrap(HostMiddleware::new(app_state.db_pool.clone()))
+            .app_data(web::Data::new(ledger_domain.clone()))
             .app_data(web::Data::new(contribution_domain.clone())) // inject domain
             .app_data(web::Data::new(host_domain.clone())) // inject domain
+            .app_data(web::Data::new(weekly_reflection_domain.clone()))
+            
 
             .wrap(mw::Logger::default())
             .wrap(session_middleware)

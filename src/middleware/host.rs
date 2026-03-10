@@ -104,3 +104,21 @@ where
         })
     }
 }
+
+
+use actix_web::{FromRequest, HttpRequest};
+//use futures_util::future::{ready, Ready};
+
+impl FromRequest for HostContext {
+    type Error = actix_web::Error;
+    type Future = Ready<Result<Self, Self::Error>>;
+
+    fn from_request(req: &HttpRequest, _: &mut actix_web::dev::Payload) -> Self::Future {
+        match req.extensions().get::<HostContext>() {
+            Some(ctx) => ready(Ok(ctx.clone())),
+            None => ready(Err(actix_web::error::ErrorBadRequest(
+                "HostContext not found in request extensions",
+            ))),
+        }
+    }
+}

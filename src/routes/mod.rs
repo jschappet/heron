@@ -27,7 +27,7 @@ pub mod ticket_api;
 pub mod twilio;
 pub mod twilio_admin;
 pub mod weekly_answers;
-
+pub mod ledger;
 pub mod hosts;
 
 // routes/mod.rs
@@ -141,6 +141,8 @@ pub fn routes() -> &'static Mutex<Vec<Route>> {
 }
 
 
+
+
 pub fn register<F, T>(
     key: &'static str,
     method: Method,
@@ -228,6 +230,7 @@ pub fn api_scope(path: &'static str) -> Scope {
         .service(scoped("/celebrate","celebrate", Some(MemberRole::Public), contribution_event::scope(vec![path, "celebrate"])))
         // Twilio integration example
         .service(scoped("/twilio", "twilio", Some(MemberRole::Public),twilio::scope(vec![path, "twilio"])))
+        .service(scoped("/ledger", "ledger", Some(MemberRole::Member),ledger::scope(vec![path, "ledger"])))
         
         .service(
     web::scope("/admin")
@@ -250,14 +253,8 @@ pub fn admin_scope() -> Scope {
         .service(scoped("/hosts", "hosts", None, hosts::admin_scope( vec![path, "hosts"] )))
         .service(scoped("/users", "users", None, users_api::admin_scope( vec![path, "users"] )))
         .service(scoped("/mail", "mail", Some(MemberRole::Admin),mailing_list::admin_scope(vec![path, "mail"])))
+        .service(scoped("/weekly_answers", "weekly_answers", Some(MemberRole::Admin),weekly_answers::admin_scope(vec![path, "weekly_answers"])))
 
 }
 
 
-// pub fn admin_scope(path: &str) -> Scope {    
-//     web::scope(path)
-//         .service(scoped("/contrib_context",     contribution_event::admin_scope()))
-//         .service(scoped("/drafts", drafts_api::scope()))
-//         .service(scoped("/memberships", memberships_api::admin_scope()))
-//         .service(hosts::admin_scope("/hosts"))
-// }

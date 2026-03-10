@@ -101,7 +101,7 @@ impl FromRequest for AuthContext {
             Ok(r) => r,
             Err(_e) => return ready(Err(AuthError::Internal("Could not load user roles".into()))),
         };
-
+        log::debug!("User Approved");
         ready(Ok(AuthContext {
             user_id,
             memberships,

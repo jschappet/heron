@@ -8,7 +8,10 @@ pub struct FieldSchema {
     #[serde(rename = "type")]
     pub field_type: String,
     pub required: Option<bool>,
-    pub options: Option<Vec<String>>,
+    //pub options: Option<Vec<String>>,
+    pub options: Option<Vec<OptionItem>>, // <-- updated to OptionItem
+    #[serde(skip_serializing_if = "Option::is_none")]
+    path: Option<String>,
     pub storage: Option<String>,
     pub display: Option<bool>,
 }
@@ -20,6 +23,13 @@ pub struct DocTypeSchema {
     pub has_markdown: bool,
     pub fields: Vec<FieldSchema>,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct OptionItem {
+    pub label: String,
+    pub value: String,
+}
+
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FrontendSchema {

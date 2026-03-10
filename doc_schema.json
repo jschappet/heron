@@ -53,9 +53,18 @@
           "key": "difficulty",
           "type": "select",
           "options": [
-            "easy",
-            "medium",
-            "hard"
+            {
+              "label": "Easy",
+              "value": "easy"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Hard",
+              "value": "hard"
+            }
           ],
           "storage": "meta"
         },
@@ -64,10 +73,22 @@
           "key": "dietary",
           "type": "checkbox",
           "options": [
-            "gluten-free",
-            "non-dairy",
-            "vegetarian",
-            "vegan"
+            {
+              "label": "Gluten Free",
+              "value": "gluten-free"
+            },
+            {
+              "label": "Non Dairy",
+              "value": "non-dairy"
+            },
+            {
+              "label": "Vegetarian",
+              "value": "vegetarian"
+            },
+            {
+              "label": "Vegan",
+              "value": "vegan"
+            }
           ],
           "storage": "meta"
         },
@@ -96,31 +117,204 @@
           "required": true
         },
         {
-          "label": "Description",
-          "key": "description",
-          "type": "textarea"
+          "label": "Slug",
+          "key": "slug",
+          "type": "text",
+          "required": true,
+          "storage": "meta"
         },
         {
           "label": "Author",
           "key": "author",
-          "type": "text"
+          "type": "text",
+          "required": true
         },
         {
-          "label": "Tags",
-          "key": "tags",
-          "type": "text",
+          "label": "Organization Type",
+          "key": "org_type",
+          "type": "select",
+          "required": true,
+          "options": [
+            {
+              "label": "Nonprofit",
+              "value": "nonprofit"
+            },
+            {
+              "label": "For-Profit",
+              "value": "for_profit"
+            },
+            {
+              "label": "Government",
+              "value": "government"
+            },
+            {
+              "label": "Tribal",
+              "value": "tribal"
+            },
+            {
+              "label": "Farm",
+              "value": "farm"
+            },
+            {
+              "label": "Educational",
+              "value": "educational"
+            },
+            {
+              "label": "Collective",
+              "value": "collective"
+            },
+            {
+              "label": "Cooperative",
+              "value": "co-op"
+            }
+          ],
           "storage": "meta"
         },
         {
-          "label": "Location",
-          "key": "location",
-          "type": "text",
+          "label": "Primary Focus Areas",
+          "key": "focus_areas",
+          "type": "multiselect",
+          "required": true,
+          "options": [
+            {
+              "label": "Food & Agriculture",
+              "value": "food_agriculture"
+            },
+            {
+              "label": "Ecological Restoration",
+              "value": "ecological_restoration"
+            },
+            {
+              "label": "Education",
+              "value": "education"
+            },
+            {
+              "label": "Land Stewardship",
+              "value": "land_stewardship"
+            },
+            {
+              "label": "Water Systems",
+              "value": "water_systems"
+            },
+            {
+              "label": "Energy",
+              "value": "energy"
+            },
+            {
+              "label": "Community Building",
+              "value": "community_building"
+            },
+            {
+              "label": "Indigenous Sovereignty",
+              "value": "indigenous_sovereignty"
+            }
+          ],
+          "storage": "meta"
+        },
+        {
+          "label": "Operational Status",
+          "key": "status",
+          "type": "select",
+          "options": [
+            {
+              "label": "Active",
+              "value": "active"
+            },
+            {
+              "label": "Inactive",
+              "value": "inactive"
+            },
+            {
+              "label": "Seasonal",
+              "value": "seasonal"
+            },
+            {
+              "label": "Unknown",
+              "value": "unknown"
+            }
+          ],
           "storage": "meta"
         },
         {
           "label": "Website",
           "key": "website",
           "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Founded",
+          "key": "founded",
+          "type": "date",
+          "storage": "meta"
+        },
+        {
+          "label": "Social Links",
+          "key": "social_links",
+          "type": "textarea",
+          "storage": "meta"
+        },
+        {
+          "label": "Street Address",
+          "key": "street_address",
+          "type": "text",
+          "storage": "meta",
+          "path": "location.address"
+        },
+        {
+          "label": "City",
+          "key": "city",
+          "type": "text",
+          "required": true,
+          "storage": "meta",
+          "path": "location.address"
+
+        },
+        {
+          "label": "State",
+          "key": "state",
+          "type": "text",
+          "required": true,
+          "storage": "meta",
+          "path": "location.address"
+        },
+        {
+          "label": "ZIP Code",
+          "key": "zip",
+          "type": "text",
+          "storage": "meta",
+          "path": "location.address"
+        },
+        {
+          "label": "Watershed(s)",
+          "key": "watersheds",
+          "type": "multiselect",
+          "path": "location",
+          "options": [
+            {
+              "label": "Skagit",
+              "value": "skagit"
+            }
+          ],
+          "storage": "meta"
+        },
+        {
+          "label": "Latitude",
+          "key": "lat",
+          "type": "number",
+          "storage": "meta",
+          "path": "location.coordinates"
+        },
+        {
+          "label": "Longitude",
+          "key": "lon",
+          "type": "number",
+          "storage": "meta",
+          "path": "location.coordinates"
+        },
+        {
+          "label": "Connection to Regenerate Skagit",
+          "key": "mission_alignment",
+          "type": "textarea",
           "storage": "meta"
         },
         {

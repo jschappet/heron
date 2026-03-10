@@ -27,6 +27,7 @@ pub struct Draft {
     pub reviewed_at: Option<chrono::NaiveDateTime>,
     pub review_notes: Option<String>,
     pub details: Option<String>,
+    pub host_id: i32,
 }
 
 
@@ -60,6 +61,8 @@ pub struct NewDraft {
     pub reviewed_at: Option<chrono::NaiveDateTime>,
     pub review_notes: Option<String>,
     pub details: Option<String>,
+    #[serde(default)]
+    pub host_id: i32,
 }
 
 // CREATE
@@ -93,6 +96,7 @@ pub struct DraftFilter {
     pub date_from: Option<NaiveDate>,
     pub date_to: Option<NaiveDate>,
     pub submitted_by: Option<i32>,
+    pub host_id: i32,
 }
 
 impl From<DraftQuery> for DraftFilter {
@@ -109,7 +113,7 @@ impl From<DraftQuery> for DraftFilter {
                 .dateTo
                 .as_deref()
                 .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()),
-            
+            host_id: query.host_id.clone(),
             submitted_by: None,
         }
     }
@@ -120,6 +124,8 @@ pub fn get_drafts_filtered(
     filter: DraftFilter,
 ) -> QueryResult<Vec<Draft>> {
     let mut q = drafts::table.into_boxed();
+
+    q = q.filter(drafts::host_id.eq(filter.host_id));
 
     if let Some(status) = filter.status {
         log::info!("Setting Status: {:?}", status);
