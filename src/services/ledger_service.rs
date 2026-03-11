@@ -107,8 +107,17 @@ impl LedgerService {
         entities::table.find(id).first(conn).map_err(|e| e.into())
     }
 
+    pub fn save_all_entities(conn: &mut DbConn, payload: Vec<NewEntity>) -> Result<String, AppError> {
 
-    pub fn save_all_entries(conn: &mut DbConn, payload: Vec<NewFlowEvent>) -> Result<String, AppError> {
+        let r = conn.transaction(|conn| {
+            diesel::insert_into(entities::table)
+                .values(&payload)
+                .execute(conn)
+            });
+        Ok("saved".to_string())
+    }
+
+    pub fn save_all_flow_events(conn: &mut DbConn, payload: Vec<NewFlowEvent>) -> Result<String, AppError> {
 
         let r = conn.transaction(|conn| {
             diesel::insert_into(flow_events::table)

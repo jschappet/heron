@@ -39,9 +39,16 @@ impl LedgerDomain {
         LedgerService::create_entity(&mut conn, new).map_err(|e| AppError::User(e.to_string()))
     }
 
-    pub fn save_all_entries(&self, events: Vec<NewFlowEvent>) -> Result<String, AppError> {
+
+    pub fn save_all_entities(&self, events: Vec<NewEntity>) -> Result<String, AppError> {
         let mut conn = self.conn()?;
-        let r = LedgerService::save_all_entries(&mut conn, events);
+        let r = LedgerService::save_all_entities(&mut conn, events);
+        Ok(r?)
+    }
+
+    pub fn save_all_flow_events(&self, events: Vec<NewFlowEvent>) -> Result<String, AppError> {
+        let mut conn = self.conn()?;
+        let r = LedgerService::save_all_flow_events(&mut conn, events);
         Ok(r?)
     }
 

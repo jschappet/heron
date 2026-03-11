@@ -2,6 +2,7 @@ use crate::domains::ledger_domain::{LedgerDomain};
 use crate::middleware::host::{self, HostContext};
 
 
+use crate::models::entities::NewEntity;
 use crate::models::flow_events::NewFlowEvent;
 use crate::routes::register;
 use crate::types::JsonField;
@@ -86,11 +87,40 @@ async fn get_entity(
 
 
 #[derive(Debug, Deserialize)]
+struct NewBulkEntityPayload {
+    rows: Vec<NewEntityPayload> 
+}
+
+async fn submit_bulk_entities(
+    domain: web::Data<LedgerDomain>,
+    payload: web::Json<NewBulkEntityPayload>,
+    auth: AuthContext,
+    host: HostContext
+)-> impl Responder {
+
+   
+    let created_by = domain.get_user_entity_id(host.0.id, auth.user_id).unwrap();
+    
+    let events: Vec<NewEntity> = payload.rows.iter().map(|row| {
+        NewEntity {
+            id: uuid::Uuid::new_v4().to_string(),
+            name: row.name.clone(),
+            host_id: host.0.id,
+            entity_type: row.entity_type.clone(),
+            created_at: chrono::Utc::now().naive_utc(),
+            created_by: created_by.clone(),
+            details: row.details.clone(),
+        }
+    }).collect();
+
+   let results = domain.save_all_entities(events);
+   format!("{}",json!({"results": results.unwrap_or_default() }))
+}
+
+#[derive(Debug, Deserialize)]
 struct NewBulkFlowPayload {
     rows: Vec<NewFlowPayload> 
 }
-
-
 
 async fn submit_bulk_flows(
     domain: web::Data<LedgerDomain>,
@@ -125,7 +155,7 @@ async fn submit_bulk_flows(
         }
     }).collect();
 
-   let results = domain.save_all_entries(events);
+   let results = domain.save_all_flow_events(events);
    format!("{}",json!({"results": results.unwrap_or_default() }))
 }
 
@@ -258,7 +288,16 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             &full_path,
             "submit/bulk",
             submit_bulk_flows,
-            crate::types::MemberRole::Public,
+            crate::types::MemberRole::Admin,
         ))
+        .service(register(
+            "submit_bulk_entities",
+            Method::POST,
+            &full_path,
+            "submit/entities/bulk",
+            submit_bulk_entities,
+            crate::types::MemberRole::Admin,
+        ))
+        //
         //submit_bulk_flows
 }
