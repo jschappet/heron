@@ -4,3 +4,4 @@ rv_api
 src/build_info.rs
 target/
 .env
+node_modules/*
