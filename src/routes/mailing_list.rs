@@ -264,13 +264,13 @@ let in_message = Message::builder()
     .port(settings.smtp.port)
     .build();
 
-log::info!(
-    "SMTP config: server={}, port={}, username={}",
-    settings.smtp.server,
-    settings.smtp.port,
-    settings.smtp.username
-);
-log::info!("Full email message: {:?}", in_message);
+// log::info!(
+//     "SMTP config: server={}, port={}, username={}",
+//     settings.smtp.server,
+//     settings.smtp.port,
+//     settings.smtp.username
+// );
+//log::info!("Full email message: {:?}", in_message);
 
 match mailer.send(&in_message) {
     Ok(res) => {
