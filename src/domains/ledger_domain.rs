@@ -118,11 +118,11 @@ impl LedgerDomain {
         Ok(id)
     }
 
-    pub fn resolve_or_create_entity_email(&self, input: String, host: i32) -> Result<String, AppError> {
-        let mut conn = self.conn()?;
-        let id = LedgerService::get_user_entity_string(&mut conn, host, input).unwrap();
-        Ok(id)
-    }
+    // pub fn resolve_or_create_entity_email(&self, input: String, host: i32) -> Result<String, AppError> {
+    //     let mut conn = self.conn()?;
+    //     let id = LedgerService::get_user_entity_string(&mut conn, host, input).unwrap();
+    //     Ok(id)
+    // }
 
     pub fn resolve_entity(&self, input: &str, host: i32) -> Result<String, AppError> {
         let mut conn = self.conn()?;

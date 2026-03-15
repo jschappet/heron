@@ -271,6 +271,8 @@ log::info!(
     settings.smtp.port,
     settings.smtp.username
 );
+log::info!("Full email message: {:?}", in_message);
+
 match mailer.send(&in_message) {
     Ok(res) => {
         log::info!("Email sent successfully: {:?}", res);
