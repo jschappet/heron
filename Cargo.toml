@@ -12,6 +12,7 @@ codegen-units = 4
 
 [build-dependencies]
 chrono = { version = "0.4.41", features = ["serde"] }
+vergen = "8"
 
 [dependencies]
 actix-cors = "0.7.1"
