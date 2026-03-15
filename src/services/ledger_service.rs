@@ -127,6 +127,48 @@ impl LedgerService {
         Ok("saved".to_string())
     }
 
+    pub fn get_user_entity_string(conn: &mut DbConn, host: i32, user: String) -> Result<String, AppError> {
+        use crate::schema::{entities::dsl as e, entity_users::dsl as eu};
+
+        let entity_id_result = eu::entity_users
+            .inner_join(e::entities.on(e::id.eq(eu::entity_id)))
+            .filter(eu::user_id.eq(user))
+            .filter(e::host_id.eq(host))
+            .select(eu::entity_id)
+            .first::<String>(conn);
+
+        let system_entity_id = format!("system_{}", host);
+
+        match entity_id_result {
+            Ok(id) => Ok(id),
+            Err(diesel::result::Error::NotFound) => {
+                // create entity
+                let new_entity = NewEntity {
+                    id: Uuid::new_v4().to_string(),
+                    name: format!("User {}", user),
+                    entity_type: "Person".to_string(),
+                    host_id: host,
+                    created_by: system_entity_id,
+                    created_at: chrono::Utc::now().naive_utc(),
+                    details: JsonField::default(),
+                };
+                let entity = Self::create_entity(conn, new_entity)?;
+
+                // create entity_user
+                let new_entity_user = NewEntityUser {
+                    entity_id: &entity.id,
+                    user_id: user,
+                    role: "member",
+                    status: "active",
+                };
+                Self::create_entity_user(conn, new_entity_user)?;
+
+                Ok(entity.id)
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+
     pub fn get_user_entity_id(conn: &mut DbConn, host: i32, user: i32) -> Result<String, AppError> {
         use crate::schema::{entities::dsl as e, entity_users::dsl as eu};
 

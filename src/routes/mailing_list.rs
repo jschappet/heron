@@ -225,6 +225,8 @@ async fn list_subscribers(
     Ok(HttpResponse::Ok().json(subs))
 }
 
+use lettre::transport::smtp::Error as SmtpError;
+
 pub fn send_templated_email<T: serde::Serialize>(
     to_email: &str,
     user_name: &str,
@@ -242,25 +244,47 @@ pub fn send_templated_email<T: serde::Serialize>(
     let html_body = handlebars.render("html", context)?;
     let text_body = handlebars.render("text", context)?;
 
-    let in_message = Message::builder()
-        .from(settings.email.smtp_from_email.parse()?)
-        .to(Mailbox::new(Some(user_name.to_string()), to_email.parse()?))
-        .subject(subject)
-        .multipart(
-            lettre::message::MultiPart::alternative_plain_html(
-                text_body,
-                html_body,
-            ),
-        )?;
+    let from_email = settings.smtp.username.parse()?;
+
+let in_message = Message::builder()
+    .from(from_email)
+    .to(Mailbox::new(Some(user_name.to_string()), to_email.parse()?))
+    .subject(subject)
+    .multipart(
+        lettre::message::MultiPart::alternative_plain_html(
+            text_body,
+            html_body,
+        ),
+    )?;
 
     let mailer = SmtpTransport::relay(settings.smtp.server.as_str())?
-        .credentials((
-            settings.smtp.username.as_str(),
-            settings.smtp.password.as_str(),
-        ).into())
-        .build();
+    .credentials((
+        settings.smtp.username.as_str(),
+        settings.smtp.password.as_str(),
+    ).into())
+    .port(settings.smtp.port)
+    .build();
 
-    mailer.send(&in_message)?;
+log::info!(
+    "SMTP config: server={}, port={}, username={}",
+    settings.smtp.server,
+    settings.smtp.port,
+    settings.smtp.username
+);
+match mailer.send(&in_message) {
+    Ok(res) => {
+        log::info!("Email sent successfully: {:?}", res);
+    }
+    Err(e ) => {
+        log::error!("SMTP send failed: {:?}", e);
+
+        //if let Some(source) = e.source() {
+        //    log::error!("Underlying cause: {:?}", source);
+        //}
+
+        return Err(e.into());
+    }
+}
     Ok(())
 }
 

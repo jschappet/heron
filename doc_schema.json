@@ -267,7 +267,6 @@
           "required": true,
           "storage": "meta",
           "path": "location.address"
-
         },
         {
           "label": "State",
@@ -316,6 +315,141 @@
           "key": "mission_alignment",
           "type": "textarea",
           "storage": "meta"
+        },
+        {
+          "label": "Featured Image",
+          "key": "featured_image",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "body_md",
+          "key": "body_md",
+          "type": "hidden",
+          "display": false
+        }
+      ]
+    },
+    "idea": {
+      "label": "Idea",
+      "has_markdown": true,
+      "fields": [
+        {
+          "label": "Title",
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Slug",
+          "key": "slug",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Author",
+          "key": "author",
+          "type": "text"
+        },
+        {
+          "label": "Idea Status",
+          "key": "idea_status",
+          "type": "select",
+          "storage": "meta",
+          "options": [
+            {
+              "label": "Draft",
+              "value": "draft"
+            },
+            {
+              "label": "Exploring",
+              "value": "exploring"
+            },
+            {
+              "label": "Looking for Collaborators",
+              "value": "collaborators"
+            },
+            {
+              "label": "In Progress",
+              "value": "in_progress"
+            },
+            {
+              "label": "Completed",
+              "value": "completed"
+            }
+          ]
+        },
+        {
+          "label": "Focus Areas",
+          "key": "focus_areas",
+          "type": "multiselect",
+          "storage": "meta",
+          "options": [
+            {
+              "label": "Food & Agriculture",
+              "value": "food_agriculture"
+            },
+            {
+              "label": "Ecological Restoration",
+              "value": "ecological_restoration"
+            },
+            {
+              "label": "Education",
+              "value": "education"
+            },
+            {
+              "label": "Land Stewardship",
+              "value": "land_stewardship"
+            },
+            {
+              "label": "Water Systems",
+              "value": "water_systems"
+            },
+            {
+              "label": "Energy",
+              "value": "energy"
+            },
+            {
+              "label": "Community Building",
+              "value": "community_building"
+            },
+            {
+              "label": "Arts & Culture",
+              "value": "arts_culture"
+            },
+            {
+              "label": "Local Economy",
+              "value": "local_economy"
+            },
+            {
+              "label": "Technology",
+              "value": "technology"
+            }
+          ]
+        },
+        {
+          "label": "Help Wanted",
+          "key": "help_wanted",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Inspired By",
+          "key": "inspired_by",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Watershed",
+          "key": "watershed",
+          "type": "select",
+          "storage": "meta",
+          "options": [
+            {
+              "label": "Skagit",
+              "value": "skagit"
+            }
+          ]
         },
         {
           "label": "Featured Image",

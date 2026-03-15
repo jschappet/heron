@@ -222,7 +222,8 @@ pub fn api_scope(path: &'static str) -> Scope {
         .service(scoped("/offers","offers", Some(MemberRole::Member), offers_api::scope(vec![path, "offers"])))
         
         .service(scoped("/ratings", "ratings", Some(MemberRole::Member),ratings_api::scope(vec![path, "ratings"])))
-        
+        .service(scoped("/drafts","drafts", None,  drafts_api::scope(vec![path, "drafts"])))
+
         .service(scoped("/upload", "upload", Some(MemberRole::Member),uploads::scope(vec![path, "upload"])))
         .service(scoped("/weekly-answers", "weekly-answers", Some(MemberRole::Member),weekly_answers::scope(vec![path, "weekly-answers"])))
         .service(scoped("/ticket", "ticket", Some(MemberRole::Public),ticket_api::scope(vec![path, "ticket"])))
@@ -248,7 +249,7 @@ pub fn admin_scope() -> Scope {
     web::scope("")
         .service(scoped("/events", "events", Some(MemberRole::Member), events_api::admin_scope(vec![path, "events"])))
         .service(scoped("/contrib_context", "contrib", None ,   contribution_event::admin_scope(vec![path, "contrib"])))
-        .service(scoped("/drafts","drafts", None,  drafts_api::scope(vec![path, "drafts"])))
+        .service(scoped("/drafts","drafts", None,  drafts_api::admin_scope(vec![path, "drafts"])))
         .service(scoped("/memberships","memberships", None,  memberships_api::admin_scope(vec![path, "membership"])))
         .service(scoped("/hosts", "hosts", None, hosts::admin_scope( vec![path, "hosts"] )))
         .service(scoped("/users", "users", None, users_api::admin_scope( vec![path, "users"] )))
