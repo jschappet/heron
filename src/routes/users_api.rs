@@ -1,4 +1,4 @@
-use actix_web::{HttpRequest, HttpResponse, Responder, Scope, delete, get, post, put, web};
+use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
 use serde::Deserialize;
 //use crate::crud::{create_user, get_users, get_user, update_user, delete_user};
 use crate::app_state::AppState;
@@ -12,7 +12,6 @@ use crate::models::users::{
 use crate::routes::register;
 use crate::types::method::Method;
 
-use crate::schema::hosts::display_name;
 use crate::settings::DeployedEnvironment;
 use crate::types::TokenPurpose;
 use crate::validator::AuthContext;

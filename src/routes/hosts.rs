@@ -1,6 +1,5 @@
 use crate::{errors::app_error::AppError, routes::register, services::hosts::HostDomain, types::method::Method, validator::AuthContext};
-use actix_web::{HttpResponse,  Scope, post, get, web};
-use serde::{Deserialize, Serialize};
+use actix_web::{HttpResponse,  Scope, web};
 
 
 

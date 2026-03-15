@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{HttpRequest, HttpResponse, Scope, get, post, web};
+use actix_web::{HttpRequest, HttpResponse, Scope, web};
 use serde_json::json;
 
 use crate::errors::app_error::AppError;
@@ -7,7 +7,6 @@ use crate::errors::auth_error::AuthError;
 use crate::middleware::host_utils::require_host;
 use crate::models::user_token::verify_user_token;
 use crate::routes::register;
-use crate::schema::hosts::display_name;
 use serde::Deserialize;
 //use crate::models::offers::*;
 //use crate::routes::offers_api;

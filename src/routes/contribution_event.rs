@@ -1,13 +1,11 @@
 use crate::routes::register;
 use crate::types::{Audience, MemberRole};
 use crate::validator::{AuthContext, has_role};
-use crate::{db::DbPool, models::contribution::ContributionEventInput};
 use crate::errors::app_error::AppError;
 //use crate::models::contribution::ContributionEventInput;
 //use crate::schema::contribution_events::contributor_id;
-use crate::services::contribute_events::{ContributionDomain, ContributionEventsService, NewContributionEvent};
-use actix_web::{HttpResponse,  Scope, post, get, web};
-use serde::{Deserialize, Serialize};
+use crate::services::contribute_events::{ContributionDomain, NewContributionEvent};
+use actix_web::{HttpResponse,  Scope, web};
 use crate::types::method::Method;
 
 

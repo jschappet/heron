@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Responder, Scope, get, web};
+use actix_web::{HttpResponse, Responder, Scope, web};
 //use chrono::{NaiveDateTime, Utc};
 use diesel::prelude::*;
 use crate::{app_state::AppState, schema::sms_replies::dsl::*, routes::twilio::SmsReply};

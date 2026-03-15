@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Responder, Scope, delete, get, post, put, web};
+use actix_web::{HttpResponse, Responder, Scope, web};
 
 use crate::app_state::AppState;
 use crate::models::roles::*;

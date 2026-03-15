@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Scope, delete, get, post, put, web};
+use actix_web::{HttpResponse, Scope, web};
 use serde::Deserialize;
 
 use crate::errors::app_error::AppError;
@@ -12,7 +12,7 @@ use crate::routes::register;
 use crate::types::method::Method;
 
 use crate::app_state::AppState;
-use crate::schema::{contribution_events, wants_to_contribute};
+use crate::schema::wants_to_contribute;
 use crate::validator::AuthContext;
 use diesel::RunQueryDsl;
 

@@ -1,10 +1,6 @@
 
-use actix_web::{Scope, get, post, put, delete, web, HttpResponse};
-use serde::{Deserialize, Serialize};
-use crate::routes::register;
-use crate::types::method::Method;
+use actix_web::{Scope, web};
 
-use crate::{app_state::AppState, errors::app_error::AppError};
 //, types::AdminContext
 
 pub fn admin_scope(parent_path: Vec<&str>) -> Scope {

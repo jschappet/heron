@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Scope, delete, get, post, web};
+use actix_web::{HttpResponse, Scope, web};
 
 use crate::app_state::AppState;
 use crate::errors::app_error::AppError;

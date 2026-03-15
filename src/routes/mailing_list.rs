@@ -1,4 +1,4 @@
-use actix_web::{HttpRequest, HttpResponse, Responder, Scope, get, post, web};
+use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
 //use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
 use chrono::{NaiveDateTime, Utc, Duration};
 use diesel::prelude::*;
@@ -225,7 +225,6 @@ async fn list_subscribers(
     Ok(HttpResponse::Ok().json(subs))
 }
 
-use lettre::transport::smtp::Error as SmtpError;
 
 pub fn send_templated_email<T: serde::Serialize>(
     to_email: &str,

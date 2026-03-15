@@ -2,12 +2,12 @@ use crate::app_state::AppState;
 use crate::domains::ledger_domain::LedgerDomain;
 use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
-use crate::middleware::host::{self, HostContext};
+use crate::middleware::host::{HostContext};
 use crate::middleware::host_utils::require_host_id;
 use crate::models::drafts::*;
 use crate::types::{DocType, DraftStatus, FrontendSchema, JsonField, MemberRole, load_frontend_schema};
-use crate::validator::{AuthContext, has_role, require_role, require_role_for_host};
-use actix_web::{HttpRequest, HttpResponse, Responder, Scope, delete, get, post, web};
+use crate::validator::{AuthContext, require_role_for_host};
+use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
 
 use crate::routes::register;
 use crate::types::method::Method;

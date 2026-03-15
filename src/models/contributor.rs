@@ -3,7 +3,6 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDateTime;
 
-use crate::schema::contributors;
 // ---------- Contributor ----------
 
 #[derive(Debug, Queryable, Identifiable, Serialize)]

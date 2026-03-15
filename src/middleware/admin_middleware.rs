@@ -1,5 +1,4 @@
 use crate::validator::AuthContext;
-use crate::types::MemberRole;
 use actix_web::{
     Error, FromRequest, HttpMessage, HttpResponse,
     body::{EitherBody, BoxBody},
@@ -51,7 +50,7 @@ where
         self.service.poll_ready(ctx)
     }
 
-    fn call(&self, mut req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let svc = self.service.clone();
 
         Box::pin(async move {

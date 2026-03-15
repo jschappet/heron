@@ -9,7 +9,7 @@ use crate::{
     validator::AuthContext,
 };
 use actix_session::Session;
-use actix_web::{HttpResponse, Scope, get, web};
+use actix_web::{HttpResponse, Scope, web};
 use crate::routes::register;
 use crate::types::method::Method;
 

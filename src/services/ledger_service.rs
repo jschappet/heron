@@ -5,7 +5,7 @@ use crate::models::flow_events::{FlowEvent, NewFlowEvent};
 use crate::schema::flow_events::host_id;
 use crate::schema::{entities, entity_users, flow_events};
 use crate::types::JsonField;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::NaiveDateTime;
 use diesel::{alias, prelude::*};
 use serde::Serialize;
 use uuid::Uuid;

@@ -1,7 +1,7 @@
-use actix_web::{App, HttpResponse, ResponseError};
+use actix_web::{HttpResponse, ResponseError};
 use bcrypt::BcryptError;
-use diesel::r2d2::{self, Error as R2D2Error};
-use serde::{Deserialize, Serialize};
+use diesel::r2d2::{Error as R2D2Error};
+use serde::Serialize;
 use std::fmt;
 
 use crate::errors::auth_error::AuthError;

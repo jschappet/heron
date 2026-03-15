@@ -1,5 +1,5 @@
 
-use actix_web::{HttpResponse, Responder, Scope, delete, get, http::header::{ContentDisposition, DispositionParam, DispositionType}, post, put, web};
+use actix_web::{HttpResponse, Responder, Scope, http::header::{ContentDisposition, DispositionParam, DispositionType}, web};
 use image::{ImageFormat, Luma};
 use serde::Deserialize;
 use crate::routes::register;

@@ -1,7 +1,6 @@
 use crate::db::{DbConn, DbPool};
 use crate::errors::app_error::AppError;
 use crate::schema::hosts::dsl::*;
-use actix_web::App;
 use diesel::prelude::*;
 use serde::Serialize;
 use crate::schema::hosts::dsl::hosts as hosts_dsl;

@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, Responder, Scope, get, post, web};
+use actix_web::{HttpResponse, Responder, Scope, web};
 use crate::routes::register;
 use crate::types::method::Method;
 

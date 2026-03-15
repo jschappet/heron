@@ -2,7 +2,6 @@ use diesel::prelude::*;
 //use diesel::sqlite::SqliteConnection;
 use serde::{Deserialize, Serialize};
 use chrono::NaiveDateTime;
-use crate::schema::contribution_events;
 
 //use crate::validator::AuthenticatedUser;
 //use crate::schema::wants_to_contribute::dsl::wants_to_contribute;

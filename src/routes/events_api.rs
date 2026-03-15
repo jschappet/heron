@@ -1,7 +1,7 @@
 
 // --- Actix Web API Endpoints ---
 
-use actix_web::{HttpResponse, Responder, Scope, get, delete, post, put, web::{self}};
+use actix_web::{HttpResponse, Responder, Scope, web::{self}};
 use serde::Serialize;
 use crate::routes::register;
 use crate::types::method::Method;

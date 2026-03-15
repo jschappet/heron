@@ -1,12 +1,11 @@
-use actix_web::{HttpRequest, HttpResponse, Responder, Scope, get, web};
+use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
 //use reqwest::Method;
 use serde::Serialize;
 
-use crate::db::DbPool;
 use crate::errors::app_error::AppError;
-use crate::middleware::host_utils::{require_host, require_host_slug};
+use crate::middleware::host_utils::require_host;
 use crate::routes::{register, role_allows, routes};
-use crate::services::contribute_events::{ContributionDomain, ContributionEventsService};
+use crate::services::contribute_events::ContributionDomain;
 use crate::types::method::Method;
 use crate::types::{DraftStatus, MemberRole};
 use crate::types::{Difficulty, Dietary, ConfigOption};
