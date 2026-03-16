@@ -208,9 +208,9 @@ async fn create_token_reset_password(
     let user = get_user_by_username_or_email(&mut conn, &payload.username)
         .map_err(|_| AppError::User("User not found".into()))?;
 
-    if !user.is_active {
-        return Err(AppError::User("Account not verified".into()));
-    }
+    // if !user.is_active {
+    //     return Err(AppError::User("Account not verified".into()));
+    // }
 
     let token = create_user_token(&mut conn, user.id, TokenPurpose::ResetPassword, 15)?;
     // Send email with token
