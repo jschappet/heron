@@ -263,6 +263,16 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
           
     web::scope("")
     // reset password verification redirect
+
+        // update own details
+        .service(register(
+            "update_member_profile",
+            Method::POST,
+            &full_path,
+            "details",
+            update_user_details_api,
+            crate::types::MemberRole::Member,
+        ))
         .service(register(
             "create_token_reset_password",
             Method::POST,
@@ -285,7 +295,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             "create",
             Method::POST,
             &full_path,
-            "",
+            "create",
             create_user_api,
             crate::types::MemberRole::Admin,
         ))
@@ -296,7 +306,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             "page",
             Method::GET,
             &full_path,
-            "/page",
+            "page",
             get_users_page,
             crate::types::MemberRole::Admin,
         ))
@@ -333,7 +343,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 
         // update user
         .service(register(
-            "update",
+            "user_update",
             Method::PUT,
             &full_path,
             "/{user_id}",
@@ -342,15 +352,6 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         ))
 
 
-        // update own details
-        .service(register(
-            "details",
-            Method::POST,
-            &full_path,
-            "/details",
-            update_user_details_api,
-            crate::types::MemberRole::Member,
-        ))
 
         
 

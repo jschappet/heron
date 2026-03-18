@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 mod field_schema;
+pub(crate) mod flow_query;
+
 pub(crate) mod method;
 
 pub use field_schema::{ FrontendSchema, load_frontend_schema};

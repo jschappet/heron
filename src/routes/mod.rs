@@ -29,6 +29,7 @@ pub mod twilio_admin;
 pub mod weekly_answers;
 pub mod ledger;
 pub mod hosts;
+pub mod member;
 
 // routes/mod.rs
 use actix_web::{Scope, web};
@@ -219,6 +220,8 @@ pub fn api_scope(path: &'static str) -> Scope {
         .service(scoped("/roles", "roles", Some(MemberRole::Member),roles_api::scope(vec![path, "roles"])))
         .service(scoped("/profile","profile", Some(MemberRole::Member), profile::scope(vec![path, "profile"])))
         .service(scoped("/memberships","membership", Some(MemberRole::Member), memberships_api::scope(vec![path, "membership"])))
+
+        .service(scoped("/member","member", Some(MemberRole::Member), member::scope(vec![path, "member"])))
         .service(scoped("/offers","offers", Some(MemberRole::Member), offers_api::scope(vec![path, "offers"])))
         
         .service(scoped("/ratings", "ratings", Some(MemberRole::Member),ratings_api::scope(vec![path, "ratings"])))

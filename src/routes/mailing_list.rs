@@ -257,12 +257,12 @@ let in_message = Message::builder()
     )?;
 
     let mailer = SmtpTransport::relay(settings.smtp.server.as_str())?
-    .credentials((
-        settings.smtp.username.as_str(),
-        settings.smtp.password.as_str(),
-    ).into())
-    .port(settings.smtp.port)
-    .build();
+        .credentials((
+            settings.smtp.username.as_str(),
+            settings.smtp.password.as_str(),
+        ).into())
+        .port(settings.smtp.port)
+        .build();
 
 // log::info!(
 //     "SMTP config: server={}, port={}, username={}",

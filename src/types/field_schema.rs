@@ -130,9 +130,9 @@ mod tests {
           "key": "difficulty",
           "type": "select",
           "options": [
-            "easy",
-            "medium",
-            "hard"
+            { "label" : "easy", "value":"easy"},
+            { "label" : "medium", "value":"medium"},
+            { "label" : "hard", "value":"hard"}
           ],
           "storage": "meta"
         },
@@ -141,10 +141,10 @@ mod tests {
           "key": "dietary",
           "type": "checkbox",
           "options": [
-            "gluten-free",
-            "non-dairy",
-            "vegetarian",
-            "vegan"
+            { "label" : "gluten-free", "value":"gluten-free"},
+            { "label" : "non-dairy", "value":"non-dairy"},
+            { "label" : "vegetarian", "value":"vegetarian"},
+            { "label" : "vegan", "value":"vegan"}
           ],
           "storage": "meta"
         },

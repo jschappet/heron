@@ -80,14 +80,18 @@ pub fn _get_drafts(conn: &mut SqliteConnection) -> QueryResult<Vec<Draft>> {
     drafts::table.select(Draft::as_select()).load(conn)
 }
 
-pub fn _get_drafts_for_user(
+
+pub fn get_drafts_for_user(
     conn: &mut SqliteConnection,
     other_user_id: i32,
+    in_host_id: i32,
 ) -> QueryResult<Vec<Draft>> {
     drafts::table
+        .filter(drafts::host_id.eq(in_host_id))
         .filter(drafts::submitted_by.eq(other_user_id))
         .load(conn)
 }
+
 
 pub struct DraftFilter {
     pub status: Option<DraftStatus>,

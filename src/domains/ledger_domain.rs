@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 use serde_json::{Value, json};
+use uuid::Uuid;
 
 use crate::db::DbPool;
 use crate::errors::app_error::AppError;
@@ -8,13 +11,15 @@ use crate::models::entities::{Entity, NewEntity};
 use crate::models::flow_events::{FlowEvent, NewFlowEvent};
 
 //use crate::models::{Entity, FlowEvent, NewEntity, NewFlowEvent};
-use crate::services::ledger_service::{LedgerEventDto, LedgerService};
+use crate::services::ledger_service::{EntityRef, LedgerEventRow, LedgerService};
+use crate::types::flow_query::FlowQuery;
 
 #[derive(Serialize)]
 pub struct EntityFlows {
     pub entity_id: String,
-    pub inflows: Vec<LedgerEventDto>,
-    pub outflows: Vec<LedgerEventDto>,
+    pub inflows: Vec<LedgerEventRow>,
+    pub outflows: Vec<LedgerEventRow>,
+    pub entities: Vec<EntityRef>,
 }
 
 #[derive(Clone)]
@@ -37,7 +42,6 @@ impl LedgerDomain {
         let mut conn = self.conn()?;
         LedgerService::create_entity(&mut conn, new).map_err(|e| AppError::User(e.to_string()))
     }
-
 
     pub fn save_all_entities(&self, events: Vec<NewEntity>) -> Result<String, AppError> {
         let mut conn = self.conn()?;
@@ -63,7 +67,8 @@ impl LedgerDomain {
 
     pub fn get_user_entity_id(&self, host: i32, user: i32) -> Result<String, AppError> {
         let mut conn = self.conn()?;
-        LedgerService::get_user_entity_id(&mut conn, host, user).map_err(|e| AppError::User(e.to_string()))
+        LedgerService::get_user_entity_id(&mut conn, host, user)
+            .map_err(|e| AppError::User(e.to_string()))
     }
 
     // FLOW EVENTS
@@ -73,9 +78,12 @@ impl LedgerDomain {
         LedgerService::create_flow_event(&mut conn, new).map_err(|e| AppError::User(e.to_string()))
     }
 
-    pub fn get_flow_events(&self, host: i32) -> Result<Vec<LedgerEventDto>, AppError> {
+    pub fn get_flow_events(
+        &self,
+        host: i32,
+    ) -> Result<(Vec<LedgerEventRow>, Vec<EntityRef>), AppError> {
         let mut conn = self.conn()?;
-        LedgerService::get_flow_events(&mut conn, host, None)
+        LedgerService::get_flow_events(&mut conn, FlowQuery::new(host).both())
             .map_err(|e| AppError::User(e.to_string()))
     }
 
@@ -84,31 +92,46 @@ impl LedgerDomain {
         host: i32,
         entity_id: &str,
     ) -> Result<EntityFlows, AppError> {
+
+        let entity_id = Uuid::parse_str(entity_id)
+            .map_err(|e| AppError::User(format!("Bad UUID: {}", e)))?;
+
         let mut conn = self.conn()?;
-        let events = LedgerService::get_flow_events(&mut conn, host, None)?;
+        let (inflows, inflow_entities) =
+            LedgerService::get_flow_events(&mut conn, FlowQuery::new(host)
+                .to()
+                .entity(entity_id)
+            )?;
+        let (outflows, outflow_entities) =
+            LedgerService::get_flow_events(&mut conn, FlowQuery::new(host)
+            .from()
+            .entity(entity_id)
+            )?;
 
-        let inflows: Vec<_> = events
-            .iter()
-            .filter(|f| f.to.id == entity_id.to_string())
-            .cloned()
-            .collect();
+        // Merge entities, deduplicating by id
+        let mut entity_map: HashMap<String, EntityRef> = HashMap::new();
 
-        let outflows: Vec<_> = events
-            .iter()
-            .filter(|f| f.from.id == entity_id.to_string())
-            .cloned()
-            .collect();
+        for e in inflow_entities
+            .into_iter()
+            .chain(outflow_entities.into_iter())
+        {
+            entity_map.entry(e.id.clone()).or_insert(e);
+        }
+
+        let entities: Vec<EntityRef> = entity_map.into_values().collect();
+
         Ok(EntityFlows {
             entity_id: entity_id.to_string(),
             inflows,
             outflows,
+            entities,
         })
     }
 
     pub fn get_ledger_summary(&self, host: i32) -> Result<Value, AppError> {
         let mut conn = self.conn()?;
-        let events = LedgerService::get_flow_events(&mut conn, host, None)?;
-        Ok(json!({ "total_events": events.len(), "ledger": events }))
+        let events = LedgerService::get_flow_events(&mut conn, FlowQuery::new(host).both())?;
+        Ok(json!({ "total_events": events.0.len(), "ledger": events.0, "entities": events.1 }))
     }
 
     pub fn resolve_or_create_entity(&self, input: i32, host: i32) -> Result<String, AppError> {

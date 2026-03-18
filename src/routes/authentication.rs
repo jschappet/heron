@@ -45,8 +45,8 @@ async fn register_new_user(
 
     users::register_user(
         &mut conn,
-        &form.username,
-        &form.email,
+        &form.username.to_ascii_lowercase(),
+        &form.email.to_ascii_lowercase(),
         base_url, 
         site_name, 
         &data.settings.clone(),
@@ -118,7 +118,7 @@ async fn login(
     let mut conn = data.db_conn()?;
     let form = form.into_inner();
 
-    match users::authenticate_user(&mut conn, form.username, form.password) {
+    match users::authenticate_user(&mut conn, form.username.to_ascii_lowercase(), form.password) {
         Ok(user) => {
             if !user.is_active {
                 log::warn!("User {} is not active", user.id);

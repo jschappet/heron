@@ -5,10 +5,12 @@ use crate::models::flow_events::{FlowEvent, NewFlowEvent};
 use crate::schema::flow_events::host_id;
 use crate::schema::{entities, entity_users, flow_events};
 use crate::types::JsonField;
+use crate::types::flow_query::{FlowDirection, FlowQuery, FlowQueryBox};
 use chrono::NaiveDateTime;
 use diesel::{alias, prelude::*};
 use serde::Serialize;
 use uuid::Uuid;
+use std::collections::HashSet;
 
 /// Service layer for interacting with entities and flow events in the ledger.
 pub struct LedgerService;
@@ -25,14 +27,15 @@ pub struct LedgerEventDto {
     pub to: EntityRef,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Queryable, Selectable)]
+#[diesel(table_name = entities)]
 pub struct EntityRef {
     pub id: String,
     pub name: String,
     pub entity_type: String,
 }
 
-#[derive(Queryable)]
+#[derive(Queryable, Serialize)]
 pub struct LedgerEventRow {
     pub id: String,
     pub timestamp: NaiveDateTime,
@@ -40,36 +43,31 @@ pub struct LedgerEventRow {
     pub quantity_value: f32,
     pub quantity_unit: String,
 
-    pub from_id: String,
-    pub from_name: String,
-    pub from_type: String,
-
-    pub to_id: String,
-    pub to_name: String,
-    pub to_type: String,
+    pub from_entity: String,
+    pub to_entity: String,
 }
 
-impl From<LedgerEventRow> for LedgerEventDto {
-    fn from(row: LedgerEventRow) -> Self {
-        LedgerEventDto {
-            id: row.id,
-            timestamp: row.timestamp,
-            resource_type: row.resource_type,
-            quantity_value: row.quantity_value,
-            quantity_unit: row.quantity_unit,
-            from: EntityRef {
-                id: row.from_id,
-                name: row.from_name,
-                entity_type: row.from_type,
-            },
-            to: EntityRef {
-                id: row.to_id,
-                name: row.to_name,
-                entity_type: row.to_type,
-            },
-        }
-    }
-}
+// impl From<LedgerEventRow> for LedgerEventDto {
+//     fn from(row: LedgerEventRow) -> Self {
+//         LedgerEventDto {
+//             id: row.id,
+//             timestamp: row.timestamp,
+//             resource_type: row.resource_type,
+//             quantity_value: row.quantity_value,
+//             quantity_unit: row.quantity_unit,
+//             from: EntityRef {
+//                 id: row.from_id,
+//                 name: row.from_name,
+//                 entity_type: row.from_type,
+//             },
+//             to: EntityRef {
+//                 id: row.to_id,
+//                 name: row.to_name,
+//                 entity_type: row.to_type,
+//             },
+//         }
+//     }
+// }
 
 impl LedgerService {
     // ----------------------------
@@ -87,7 +85,10 @@ impl LedgerService {
             .map_err(|e| e.into())
     }
 
-    pub fn create_entity_user(conn: &mut DbConn, new: NewEntityUser) -> Result<EntityUser, AppError> {
+    pub fn create_entity_user(
+        conn: &mut DbConn,
+        new: NewEntityUser,
+    ) -> Result<EntityUser, AppError> {
         //use crate::schema::entity_users::dsl::*;
 
         diesel::insert_into(entity_users::table)
@@ -95,7 +96,6 @@ impl LedgerService {
             .execute(conn)
             .map_err(|e| AppError::User(e.to_string()))?;
 
-        
         entity_users::table
             .filter(entity_users::entity_id.eq(new.entity_id))
             .filter(entity_users::user_id.eq(new.user_id))
@@ -107,27 +107,30 @@ impl LedgerService {
         entities::table.find(id).first(conn).map_err(|e| e.into())
     }
 
-    pub fn save_all_entities(conn: &mut DbConn, payload: Vec<NewEntity>) -> Result<String, AppError> {
-
+    pub fn save_all_entities(
+        conn: &mut DbConn,
+        payload: Vec<NewEntity>,
+    ) -> Result<String, AppError> {
         let r = conn.transaction(|conn| {
             diesel::insert_into(entities::table)
                 .values(&payload)
                 .execute(conn)
-            });
+        });
         Ok("saved".to_string())
     }
 
-    pub fn save_all_flow_events(conn: &mut DbConn, payload: Vec<NewFlowEvent>) -> Result<String, AppError> {
-
+    pub fn save_all_flow_events(
+        conn: &mut DbConn,
+        payload: Vec<NewFlowEvent>,
+    ) -> Result<String, AppError> {
         let r = conn.transaction(|conn| {
             diesel::insert_into(flow_events::table)
                 .values(&payload)
                 .execute(conn)
-            });
+        });
         Ok("saved".to_string())
     }
 
-    
     pub fn get_user_entity_id(conn: &mut DbConn, host: i32, user: i32) -> Result<String, AppError> {
         use crate::schema::{entities::dsl as e, entity_users::dsl as eu};
 
@@ -184,8 +187,6 @@ impl LedgerService {
             .map_err(|e| e.into())
     }
 
-
-
     pub fn get_entities(conn: &mut DbConn, host: i32) -> Result<Vec<Entity>, AppError> {
         entities::table
             .select(Entity::as_select())
@@ -238,30 +239,68 @@ impl LedgerService {
             .map_err(|e| e.into())
     }
 
+    pub fn get_all_entities(
+        conn: &mut DbConn,
+        entity_ids: Vec<String>,
+    ) -> Result<Vec<EntityRef>, AppError> {
+        //use crate::schema::entities::dsl::*;
+
+        entities::table
+            .filter(entities::id.eq_any(entity_ids))
+            .select(EntityRef::as_select())
+            .load::<EntityRef>(conn)
+            .map_err(|e| e.into())
+    }
+
+
+
     pub fn get_flow_events(
         conn: &mut DbConn,
-        host: i32,
-        entity_filter: Option<String>,
-    ) -> Result<Vec<LedgerEventDto>, AppError> {
-        let (from_entities, to_entities) =
-            alias!(entities as from_entities, entities as to_entities);
+        flow_query: FlowQuery,
+    ) -> Result<(Vec<LedgerEventRow>, Vec<EntityRef>), AppError> {
+        use diesel::prelude::*;
 
+        // --- Step 1: Query flow_events filtered by FlowQuery ---
         let mut query = flow_events::table
-            .inner_join(
-                from_entities.on(flow_events::from_entity.eq(from_entities.field(entities::id))),
-            )
-            .inner_join(to_entities.on(flow_events::to_entity.eq(to_entities.field(entities::id))))
-            .filter(flow_events::host_id.eq(host))
-            .into_boxed(); // ← allows conditional filters
+            .filter(flow_events::host_id.eq(flow_query.host))
+            .into_boxed::<diesel::sqlite::Sqlite>();
 
-        if let Some(entity_id) = entity_filter {
-            query = query.filter(
-                flow_events::from_entity
-                    .eq(entity_id.clone())
-                    .or(flow_events::to_entity.eq(entity_id.clone())),
-            );
+        // Entity + direction filters
+        if let Some(entity) = flow_query.entity {
+            match flow_query.direction {
+                FlowDirection::From => {
+                    query = query.filter(flow_events::from_entity.eq(entity.to_string()));
+                }
+                FlowDirection::To => {
+                    query = query.filter(flow_events::to_entity.eq(entity.to_string()));
+                }
+                FlowDirection::Both => {
+                    query = query.filter(
+                        flow_events::from_entity
+                            .eq(entity.to_string())
+                            .or(flow_events::to_entity.eq(entity.to_string())),
+                    );
+                }
+            }
         }
 
+        // Date filters
+        if let Some(since) = flow_query.since {
+            query = query.filter(flow_events::timestamp.ge(since));
+        }
+        if let Some(until) = flow_query.until {
+            query = query.filter(flow_events::timestamp.le(until));
+        }
+
+        // Pagination
+        if let Some(limit) = flow_query.limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = flow_query.offset {
+            query = query.offset(offset);
+        }
+
+        // Execute the query
         let rows: Vec<LedgerEventRow> = query
             .order(flow_events::timestamp.desc())
             .select((
@@ -270,47 +309,26 @@ impl LedgerService {
                 flow_events::resource_type,
                 flow_events::quantity_value,
                 flow_events::quantity_unit,
-                from_entities.field(entities::id),
-                from_entities.field(entities::name),
-                from_entities.field(entities::entity_type),
-                to_entities.field(entities::id),
-                to_entities.field(entities::name),
-                to_entities.field(entities::entity_type),
+                flow_events::from_entity,
+                flow_events::to_entity,
             ))
             .load(conn)?;
 
-        Ok(rows.into_iter().map(Into::into).collect())
+            // --- Step 2: Collect unique entity UUIDs from rows ---
+    let mut entity_set = HashSet::new();
+    for row in &rows {
+        entity_set.insert(row.from_entity.clone());
+        entity_set.insert(row.to_entity.clone());
     }
 
-    pub fn _old_get_flow_events(
-        conn: &mut DbConn,
-        host: i32,
-    ) -> Result<Vec<LedgerEventDto>, AppError> {
-        let (from_entities, to_entities) =
-            alias!(entities as from_entities, entities as to_entities);
-        let rows: Vec<LedgerEventRow> = flow_events::table
-            .inner_join(
-                from_entities.on(flow_events::from_entity.eq(from_entities.field(entities::id))),
-            )
-            .inner_join(to_entities.on(flow_events::to_entity.eq(to_entities.field(entities::id))))
-            .filter(flow_events::host_id.eq(host))
-            .order(flow_events::timestamp.desc())
-            .select((
-                flow_events::id,
-                flow_events::timestamp,
-                flow_events::resource_type,
-                flow_events::quantity_value,
-                flow_events::quantity_unit,
-                from_entities.field(entities::id),
-                from_entities.field(entities::name),
-                from_entities.field(entities::entity_type),
-                to_entities.field(entities::id),
-                to_entities.field(entities::name),
-                to_entities.field(entities::entity_type),
-            ))
-            .load(conn)?;
+    let uniq_entities: Vec<String> = entity_set.into_iter().collect();
+    let entities = Self::get_all_entities(conn, uniq_entities)?;
 
-        Ok(rows.into_iter().map(Into::into).collect())
+    // --- Step 3: Load entities from DB ---
+
+        // Convert rows to DTOs
+        //Ok(rows.into_iter().map(Into::into).collect())
+        Ok((rows, entities))
     }
 
     pub fn get_inflows(conn: &mut DbConn, entity_id: &str) -> Result<Vec<FlowEvent>, AppError> {

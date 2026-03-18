@@ -30,6 +30,8 @@ mod middleware;
 use diesel::SqliteConnection;
 use handlebars::Handlebars;
 use crate::domains::ledger_domain::LedgerDomain;
+use crate::domains::member_domain::MemberDomain;
+
 //use registration::{create_registration, update_registration_user_id, get_registrations, NewRegistration, RegisterQuery};
 mod mailmerge;
 mod app_state;
@@ -134,6 +136,7 @@ async fn main() -> std::io::Result<()> {
 
     let weekly_reflection_domain = WeeklyReflectionDomain::new(pool.clone());
     let ledger_domain = LedgerDomain::new(pool.clone());
+    let member_domain = MemberDomain::new(pool.clone());
 
 
     //let admin_middleware = AdminMiddleware::new();
@@ -171,6 +174,7 @@ async fn main() -> std::io::Result<()> {
         let mut app = App::new()
             .wrap(HostMiddleware::new(app_state.db_pool.clone()))
             .app_data(web::Data::new(ledger_domain.clone()))
+            .app_data(web::Data::new(member_domain.clone()))
             .app_data(web::Data::new(contribution_domain.clone())) // inject domain
             .app_data(web::Data::new(host_domain.clone())) // inject domain
             .app_data(web::Data::new(weekly_reflection_domain.clone()))

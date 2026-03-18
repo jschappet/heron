@@ -1,4 +1,4 @@
-use crate::domains::ledger_domain::{LedgerDomain};
+use crate::domains::ledger_domain::LedgerDomain;
 use crate::middleware::host::{HostContext};
 
 
