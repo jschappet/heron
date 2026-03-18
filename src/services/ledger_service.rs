@@ -257,7 +257,7 @@ impl LedgerService {
     pub fn get_flow_events(
         conn: &mut DbConn,
         flow_query: FlowQuery,
-    ) -> Result<(Vec<LedgerEventRow>, Vec<EntityRef>), AppError> {
+    ) -> Result<(Vec<LedgerEventRow>, Vec<EntityRef>, Vec<String>), AppError> {
         use diesel::prelude::*;
 
         // --- Step 1: Query flow_events filtered by FlowQuery ---
@@ -316,10 +316,13 @@ impl LedgerService {
 
             // --- Step 2: Collect unique entity UUIDs from rows ---
     let mut entity_set = HashSet::new();
+    let mut rt_set = HashSet::new();
     for row in &rows {
         entity_set.insert(row.from_entity.clone());
         entity_set.insert(row.to_entity.clone());
+        rt_set.insert(row.resource_type.clone());
     }
+    let uniq_rt: Vec<String> = rt_set.into_iter().collect();
 
     let uniq_entities: Vec<String> = entity_set.into_iter().collect();
     let entities = Self::get_all_entities(conn, uniq_entities)?;
@@ -328,7 +331,7 @@ impl LedgerService {
 
         // Convert rows to DTOs
         //Ok(rows.into_iter().map(Into::into).collect())
-        Ok((rows, entities))
+        Ok((rows, entities, uniq_rt))
     }
 
     pub fn get_inflows(conn: &mut DbConn, entity_id: &str) -> Result<Vec<FlowEvent>, AppError> {

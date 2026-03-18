@@ -41,12 +41,12 @@ pub fn member_flows(
     .map_err(|e| AppError::User(format!("Bad UUID: {}", e)))?;
 
 
-let (inflows, inflow_entities) = LedgerService::get_flow_events(
+let (inflows, inflow_entities, _) = LedgerService::get_flow_events(
     conn,
     FlowQuery::new(host_id).entity(uuid).to(),
 )?;
 
-let (outflows, outflow_entities) = LedgerService::get_flow_events(
+let (outflows, outflow_entities, _) = LedgerService::get_flow_events(
     conn,
     FlowQuery::new(host_id).entity(uuid).from(),
 )?;

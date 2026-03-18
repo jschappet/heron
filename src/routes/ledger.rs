@@ -6,6 +6,7 @@ use crate::models::entities::NewEntity;
 use crate::models::flow_events::NewFlowEvent;
 use crate::routes::register;
 use crate::types::JsonField;
+use crate::types::flow_query::{FlowDirection, FlowQuery};
 //use crate::services::hosts::HostDomain;
 use crate::types::method::Method;
 use crate::validator::AuthContext;
@@ -13,6 +14,7 @@ use actix_web::{HttpResponse, Responder, Scope, web};
 use chrono::NaiveDateTime;
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct NewFlowPayload {
@@ -215,11 +217,46 @@ async fn get_entity_flows(
     }
 }
 
+#[derive(Deserialize)]
+pub struct FlowQueryParams {
+    entity: Option<Uuid>,
+    direction: Option<String>, // "From", "To", "Both"
+    start: Option<String>,     // YYYY-MM-DD
+    end: Option<String>,       // YYYY-MM-DD
+    limit: Option<i64>,
+    offset: Option<i64>,
+}
+
+
 async fn get_ledger(
     domain: web::Data<LedgerDomain>,
-    host: HostContext
+    host: HostContext,
+    query: web::Query<FlowQueryParams>,
 ) -> impl Responder {
-    match domain.get_ledger_summary(host.0.id) {
+    // parse dates
+    let since = query.start.as_ref()
+        .and_then(|s| NaiveDateTime::parse_from_str(&(s.clone() + " 00:00:00"), "%Y-%m-%d %H:%M:%S").ok());
+    let until = query.end.as_ref()
+        .and_then(|s| NaiveDateTime::parse_from_str(&(s.clone() + " 23:59:59"), "%Y-%m-%d %H:%M:%S").ok());
+
+    // parse direction
+    let direction = match query.direction.as_deref() {
+        Some("From") => FlowDirection::From,
+        Some("To") => FlowDirection::To,
+        _ => FlowDirection::Both,
+    };
+
+    let flow_query = FlowQuery {
+        host: host.0.id,
+        entity: query.entity,
+        direction,
+        since,
+        until,
+        limit: query.limit,
+        offset: query.offset,
+    };
+
+    match domain.get_ledger_summary(flow_query) {
         Ok(summary) => HttpResponse::Ok().json(summary),
         Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
     }
