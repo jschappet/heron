@@ -117,11 +117,16 @@
           "required": true
         },
         {
-          "label": "Slug",
           "key": "slug",
+          "label": "Slug",
           "type": "text",
-          "required": true,
-          "storage": "meta"
+          "readonly": true,
+          "actions": [
+            {
+              "action": "slugify",
+              "source": "title"
+            }
+          ]
         },
         {
           "label": "Author",
@@ -177,6 +182,10 @@
           "required": true,
           "options": [
             {
+              "label": "Health",
+              "value": "health"
+            },
+            {
               "label": "Food & Agriculture",
               "value": "food_agriculture"
             },
@@ -203,6 +212,10 @@
             {
               "label": "Community Building",
               "value": "community_building"
+            },
+            {
+              "label": "Green Building",
+              "value": "green_building"
             },
             {
               "label": "Indigenous Sovereignty",
@@ -241,6 +254,38 @@
           "type": "text",
           "storage": "meta"
         },
+
+        {
+          "label": "Contact Name",
+          "key": "contact_name",
+          "type": "text",
+          "path": "contact.name",
+          "required": false,
+          "storage": "meta"
+        },
+        {
+          "label": "Contact Email",
+          "key": "contact_email",
+          "type": "text",
+          "path": "contact.email",
+          "required": false,
+          "storage": "meta"
+        },
+        {
+          "label": "Contact Phone",
+          "key": "contact_phone",
+          "type": "text",
+          "path": "contact.phone",
+          "required": false,
+          "storage": "meta"
+        },
+        {
+          "label": "Events Page",
+          "key": "events",
+          "type": "text",
+          "required": false,
+          "storage": "meta"
+        },
         {
           "label": "Founded",
           "key": "founded",
@@ -252,6 +297,23 @@
           "key": "social_links",
           "type": "textarea",
           "storage": "meta"
+        },
+        {
+          "key": "address",
+          "label": "Address",
+          "type": "text",
+          "required": false,
+          "actions": [
+            {
+              "action": "parse_address",
+              "targets": {
+                "street": "street_address",
+                "city": "city",
+                "state": "state",
+                "zip": "zip"
+              }
+            }
+          ]
         },
         {
           "label": "Street Address",
@@ -341,10 +403,16 @@
           "required": true
         },
         {
-          "label": "Slug",
           "key": "slug",
+          "label": "Slug",
           "type": "text",
-          "storage": "meta"
+          "readonly": true,
+          "actions": [
+            {
+              "action": "slugify",
+              "source": "title"
+            }
+          ]
         },
         {
           "label": "Author",
@@ -390,6 +458,10 @@
               "value": "food_agriculture"
             },
             {
+              "label": "Health",
+              "value": "health"
+            },
+            {
               "label": "Ecological Restoration",
               "value": "ecological_restoration"
             },
@@ -412,6 +484,10 @@
             {
               "label": "Community Building",
               "value": "community_building"
+            },
+            {
+              "label": "Green Building",
+              "value": "green_building"
             },
             {
               "label": "Arts & Culture",
