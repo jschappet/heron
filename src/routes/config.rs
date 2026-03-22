@@ -30,7 +30,7 @@ pub struct ConfigResponse {
 pub async fn get_config_api(
     contributions: web::Data<ContributionDomain>,
 ) -> Result<HttpResponse, AppError> {
-    ;
+    
     //let contribution = contributions.get_effort_contexts(); // You can handle errors as needed
     let contribution = match contributions.get_effort_contexts(crate::types::Audience::Public) {
         Ok(contribution) => contribution,

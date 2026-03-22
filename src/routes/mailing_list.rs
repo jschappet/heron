@@ -235,6 +235,9 @@ pub fn send_templated_email<T: serde::Serialize>(
     context: &T,
     settings: &Settings,
 ) -> Result<(), Box<dyn std::error::Error>> {
+
+        
+    
     let mut handlebars = Handlebars::new();
 
     handlebars.register_template_file("html", html_template)?;

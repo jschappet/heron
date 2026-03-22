@@ -1,19 +1,36 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+
+
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct FieldSchema {
     pub label: String,
     pub key: String,
+
     #[serde(rename = "type")]
     pub field_type: String,
-    pub required: Option<bool>,
-    //pub options: Option<Vec<String>>,
-    pub options: Option<Vec<OptionItem>>, // <-- updated to OptionItem
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    path: Option<String>,
+    pub required: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub options: Option<Vec<OptionItem>>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub storage: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub readonly: Option<bool>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actions: Option<Vec<FieldAction>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
@@ -23,6 +40,15 @@ pub struct DocTypeSchema {
     pub has_markdown: bool,
     pub fields: Vec<FieldSchema>,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct FieldAction {
+    pub action: String,
+    pub source: Option<String>,
+    pub targets: Option<HashMap<String, String>>,
+    pub params: Option<HashMap<String, String>>,
+}
+
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct OptionItem {
