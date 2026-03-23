@@ -1,4 +1,5 @@
 use crate::app_state::AppState;
+use crate::domains::draft_domain::{self, DraftDomain};
 use crate::domains::ledger_domain::LedgerDomain;
 use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
@@ -36,54 +37,22 @@ async fn get_doc_schema() -> Result<HttpResponse, AppError> {
 // Create or save draft
 //#[post("")]
 pub async fn create_draft_api(
-    data: web::Data<AppState>,
+    //_data: web::Data<AppState>,
     new: web::Json<NewDraft>,
     auth_context: AuthContext,
     host: HostContext,
-    domain: web::Data<LedgerDomain>,
+    //domain: web::Data<LedgerDomain>,
+    domain: web::Data<DraftDomain>,
 ) -> impl Responder {
-    let mut conn = data.db_pool.get().unwrap();
+    //let mut conn = data.db_pool.get().unwrap();
     let mut new = new.into_inner();
     new.submitted_by = Some(auth_context.user_id);
     new.host_id = host.0.id;
-    match create_draft(&mut conn, &new) {
-        Ok(draft) => {
-            let timestamp = chrono::Utc::now().naive_utc();
-           
-
-            let entity_user_id = domain.resolve_or_create_entity(auth_context.user_id, host.0.id).unwrap();
-
-            let from_id = entity_user_id.clone();
-            let to_id   = domain.resolve_entity("IdeaBank", host.0.id).unwrap();
-            log::debug!("From: {:?}", from_id);
-            log::debug!("To: {:?}", to_id);
-            let details = JsonField::default();
-            let new_flow = crate::models::flow_events::NewFlowEvent {
-                id: uuid::Uuid::new_v4().to_string(),
-                timestamp,
-                from_entity: from_id,
-                to_entity: to_id,
-                host_id: host.0.id,
-                resource_type: "document_submitted".to_string(),
-                quantity_value: 1.0,
-                quantity_unit: "count".to_string(),
-                notes: Some(json!({ "doc_type": draft.doc_type, "draft_id": draft.id}).to_string()),
-                recorded_at: chrono::Utc::now().naive_utc(),
-                details: details,
-                created_by: entity_user_id,
-            };
-
-            match domain.record_flow(new_flow) {
-                Ok(_) => HttpResponse::Ok().json(draft),
-                Err(e) => { 
-                    log::error!("Failed to save FlowEvent {:?}", e);
-                    HttpResponse::Ok().json(draft) 
-                },
-            }
-            
-        },
+    
+    match domain.create_draft(&new) {
+        Ok(draft) => HttpResponse::Ok().json(draft),
         Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
-        //.finish(),
+        
     }
 }
 
@@ -607,7 +576,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
             "draft_get",
             Method::GET,
             &full_path,
-            "{id}",
+            "get/{id}",
             get_draft_api,
             MemberRole::Member,
         ))

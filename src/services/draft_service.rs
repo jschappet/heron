@@ -2,11 +2,9 @@ use diesel::{QueryResult, Queryable, Selectable, SqliteConnection};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    schema::drafts,
-    types::{DocType, DraftStatus},
+    models::drafts::{Draft, NewDraft}, schema::drafts, types::{DocType, DraftStatus}
 };
 use diesel::prelude::*;
-
 
 #[derive(Serialize, Deserialize, Debug, Selectable, Queryable)]
 #[diesel(table_name = drafts)]
@@ -35,5 +33,14 @@ impl DraftService {
             .filter(drafts::submitted_by.eq(member_id))
             .select(DraftListItem::as_select())
             .load(conn)
+    }
+
+    // CREATE
+    pub fn create_draft(conn: &mut SqliteConnection, new: &NewDraft) -> QueryResult<Draft> {
+        diesel::insert_into(drafts::table)
+            .values(new)
+            .execute(conn)?;
+
+        drafts::table.order(drafts::id.desc()).first(conn)
     }
 }
