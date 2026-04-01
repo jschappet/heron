@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use diesel::dsl::json;
 use serde::Serialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -12,6 +13,7 @@ use crate::models::flow_events::{FlowEvent, NewFlowEvent};
 
 //use crate::models::{Entity, FlowEvent, NewEntity, NewFlowEvent};
 use crate::services::ledger_service::{EntityRef, LedgerEventRow, LedgerService};
+use crate::types::{Audience, ConfigHash, JsonField};
 use crate::types::flow_query::FlowQuery;
 
 #[derive(Serialize)]
@@ -53,6 +55,11 @@ impl LedgerDomain {
         let mut conn = self.conn()?;
         let r = LedgerService::save_all_flow_events(&mut conn, events);
         Ok(r?)
+    }
+
+    pub fn get_effort_contexts(&self, audience: Audience) -> Result<Vec<ConfigHash>, AppError> {
+        let mut conn = self.conn()?;
+        LedgerService::get_effort_contexts(&mut conn, audience)
     }
 
     pub fn get_entity(&self, id: &str) -> Result<Entity, AppError> {
@@ -143,6 +150,28 @@ impl LedgerDomain {
         let mut conn = self.conn()?;
         let id = LedgerService::get_user_entity_id(&mut conn, host, input).unwrap();
         Ok(id)
+    }
+
+
+    pub fn find_or_create_entity(&self, input: &str, host: i32) -> Result<String, AppError> {
+        let mut conn = self.conn()?;
+        match  LedgerService::find_entity_by_name(&mut conn, input, host) {
+            Ok(entity) => Ok(entity.id),
+            Err(_) => {
+                let new_entity = NewEntity {
+                    id: Uuid::new_v4().to_string(),
+                    name: input.to_string(),
+                    host_id: host,
+                    entity_type: "person_email".to_string(),
+                    created_by: "System".to_string(),
+                    created_at: chrono::Utc::now().naive_utc(),
+                    details: JsonField::default(),
+                    
+                };
+                let result = LedgerService::create_entity(&mut conn, new_entity).map_err(|e| AppError::User(e.to_string()))?;
+                Ok(result.id)
+            }
+        }
     }
 
     // pub fn resolve_or_create_entity_email(&self, input: String, host: i32) -> Result<String, AppError> {

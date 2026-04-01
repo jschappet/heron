@@ -1,3 +1,5 @@
+use crate::domains::ledger_domain::LedgerDomain;
+use crate::middleware::host::HostContext;
 use crate::routes::register;
 use crate::types::{Audience, MemberRole};
 use crate::validator::{AuthContext, has_role};
@@ -6,35 +8,72 @@ use crate::errors::app_error::AppError;
 //use crate::schema::contribution_events::contributor_id;
 use crate::services::contribute_events::{ContributionDomain, NewContributionEvent};
 use actix_web::{HttpResponse,  Scope, web};
+use serde::{Deserialize, Serialize};
 use crate::types::method::Method;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContributionPayload {
+    pub context_id: Option<String>,
+    pub context_name: Option<String>,
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub availability_days: Option<String>,
+    pub availability_times: Option<String>,
+    pub notes: Option<String>,
+    pub effort: Option<String>,
+    pub hours: Option<f32>,
+
+}
 
 
 pub async fn create_contribute_event(
     contributions: web::Data<ContributionDomain>,
-    payload: web::Json<NewContributionEvent>,
+    payload: web::Json<ContributionPayload>,
+    host: HostContext,
 ) -> Result<HttpResponse, AppError> {
 
+        let payload = payload.into_inner();
+        log::info!("Creating contributor with name: {} and Notes: {}", 
+            payload.name.clone().unwrap_or_else(|| "Anonymous".into()), 
+            payload.effort.clone().unwrap_or_else(|| "No notes provided".into()));
+
+        let payload = NewContributionEvent {
+            context_id: payload.context_id,
+            context_name: payload.context_name,
+            host_id: host.0.id, // This should be set to the authenticated user's host ID
+            name: payload.name,
+            email: payload.email,
+            availability_days: payload.availability_days,
+            availability_times: payload.availability_times,
+            notes: payload.effort.clone(),
+            effort: payload.effort,
+            hours: payload.hours.unwrap_or(0.0),
+        };
+
+
     let result = contributions
-        .create_event(payload.into_inner())?;
+        .create_event(payload)?;
 
     Ok(HttpResponse::Ok().json(result))
 }
 
 
 pub async fn list_all_effort_context(
-    contributions: web::Data<ContributionDomain>,
+    //contributions: web::Data<ContributionDomain>,
+    domain: web::Data<LedgerDomain>,
     admin: AuthContext
 ) -> Result<HttpResponse, AppError> {
 
     // Map the admin roles into an Audience
-    let audience = if has_role(&admin.get_roles(), &[MemberRole::Admin]) {
+    let audience = if has_role(&admin.get_roles(),
+         &[MemberRole::Admin]) {
         Audience::Admin
     } else {
         Audience::Authenticated
     };
 
     let result =
-     contributions.get_effort_contexts(audience)?;
+     domain.get_effort_contexts(audience)?;
     
 
     Ok(HttpResponse::Ok().json(result))
@@ -53,20 +92,21 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
             create_contribute_event,
             crate::types::MemberRole::Public,
         ))
+        .service(register(
+            "list_all_effort_context",
+            Method::GET,
+            &full_path,
+            "/contexts",
+            list_all_effort_context,
+            crate::types::MemberRole::Public,
+        ))
 }
 
 
 pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
     let full_path = parent_path.join("/");
     web::scope("")
-        .service(register(
-            "list_all_effort_context",
-            Method::GET,
-            &full_path,
-            "",
-            list_all_effort_context,
-            crate::types::MemberRole::Admin,
-        ))
+        
 }
 
 

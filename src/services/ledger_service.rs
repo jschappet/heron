@@ -1,10 +1,10 @@
-use crate::db::DbConn;
+use crate::db::{DbConn, DbPool};
 use crate::errors::app_error::AppError;
 use crate::models::entities::{Entity, EntityUser, NewEntity, NewEntityUser};
 use crate::models::flow_events::{FlowEvent, NewFlowEvent};
 use crate::schema::flow_events::host_id;
 use crate::schema::{entities, entity_users, flow_events};
-use crate::types::JsonField;
+use crate::types::{Audience, ConfigHash, JsonField};
 use crate::types::flow_query::{FlowDirection, FlowQuery, FlowQueryBox};
 use chrono::NaiveDateTime;
 use diesel::{alias, prelude::*};
@@ -13,7 +13,10 @@ use uuid::Uuid;
 use std::collections::HashSet;
 
 /// Service layer for interacting with entities and flow events in the ledger.
-pub struct LedgerService;
+pub struct LedgerService {
+    pub db_pool: DbPool,
+
+}
 
 #[derive(Serialize, Clone)]
 pub struct LedgerEventDto {
@@ -45,6 +48,7 @@ pub struct LedgerEventRow {
 
     pub from_entity: String,
     pub to_entity: String,
+    pub notes: Option<String>,
 }
 
 // impl From<LedgerEventRow> for LedgerEventDto {
@@ -70,6 +74,18 @@ pub struct LedgerEventRow {
 // }
 
 impl LedgerService {
+
+    pub fn new(db_pool: DbPool) -> Self {
+        Self { db_pool }
+    }
+
+    pub fn db_conn(&self) -> Result<DbConn, AppError> {
+        self.db_pool
+            .get()
+            .map_err(|err| AppError::User(err.to_string()))
+    }
+
+
     // ----------------------------
     // ENTITY CRUD
     // ----------------------------
@@ -253,6 +269,32 @@ impl LedgerService {
     }
 
 
+    pub fn get_effort_contexts(conn: &mut DbConn, audience: Audience) -> Result<Vec<ConfigHash>, AppError> {
+        
+        use crate::schema::entities::dsl::*;
+
+        let  query = entities
+            .order(name.asc())
+            .filter(entity_type.eq("project"))
+            .select((id, name))
+            .into_boxed(); // <-- important
+
+        // Does not Apply to Entitites yet
+        // match audience {
+        //     Audience::Admin => {}
+        //     _ => query = query.filter(active_flag.eq(true)),
+        // }
+        
+        let contexts = query
+            .load::<(String, String)>(&mut *conn)
+            .map_err(AppError::Db)?
+            .into_iter()
+            .map(|(key, value)| ConfigHash { key, value })
+            .collect();
+
+        Ok(contexts)
+    }
+
 
     pub fn get_flow_events(
         conn: &mut DbConn,
@@ -311,6 +353,7 @@ impl LedgerService {
                 flow_events::quantity_unit,
                 flow_events::from_entity,
                 flow_events::to_entity,
+                flow_events::notes,
             ))
             .load(conn)?;
 
