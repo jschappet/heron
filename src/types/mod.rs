@@ -17,6 +17,12 @@ pub use field_schema::{ FrontendSchema, load_frontend_schema};
 mod auth_context;
 //pub use auth_context::{AdminContext, MembershipContext};
 
+#[derive(Serialize)]
+pub struct ConfigHash {
+    pub key: String,
+    pub value: String,
+}
+
 
 
 // Wrapper type

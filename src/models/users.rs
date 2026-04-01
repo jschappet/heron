@@ -49,7 +49,7 @@ pub struct PublicUser {
     pub bio: Option<String>,
     pub image: Option<String>,
     pub neighborhood: Option<String>,
-    //pub email: Option<String>,
+    pub email: Option<String>,
     pub phone: Option<String>,
     pub show_in_directory: Option<bool>,
 }
@@ -73,7 +73,7 @@ impl From<User> for PublicUser {
             .unwrap_or_else(|| user.username.clone());
 
         
-        let _email_address = user.email;
+        let email_address = user.email;
 
         let phone_number = details
             .get("phones")
@@ -107,7 +107,7 @@ impl From<User> for PublicUser {
             neighborhood,
             bio,
             image,
-            //email: Some(email_address),
+            email: Some(email_address),
             phone: phone_number,
             show_in_directory: Some(show_in_dir),
         }

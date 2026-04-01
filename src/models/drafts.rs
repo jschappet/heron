@@ -65,14 +65,6 @@ pub struct NewDraft {
     pub host_id: i32,
 }
 
-// CREATE
-pub fn create_draft(conn: &mut SqliteConnection, new: &NewDraft) -> QueryResult<Draft> {
-    diesel::insert_into(drafts::table)
-        .values(new)
-        .execute(conn)?;
-
-    drafts::table.order(drafts::id.desc()).first(conn)
-}
 
 // READ all
 pub fn _get_drafts(conn: &mut SqliteConnection) -> QueryResult<Vec<Draft>> {
