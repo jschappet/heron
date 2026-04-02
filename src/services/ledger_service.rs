@@ -269,12 +269,13 @@ impl LedgerService {
     }
 
 
-    pub fn get_effort_contexts(conn: &mut DbConn, audience: Audience) -> Result<Vec<ConfigHash>, AppError> {
+    pub fn get_effort_contexts(conn: &mut DbConn, host: i32, audience: Audience) -> Result<Vec<ConfigHash>, AppError> {
         
         use crate::schema::entities::dsl::*;
 
         let  query = entities
             .order(name.asc())
+            .filter(host_id.eq(host))
             .filter(entity_type.eq("project"))
             .select((id, name))
             .into_boxed(); // <-- important

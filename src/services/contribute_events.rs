@@ -4,6 +4,7 @@ use crate::domains::ledger_domain::LedgerDomain;
 use crate::errors::app_error::AppError;
 use crate::models::contribution::{ContributionEvent, ContributionEventInput};
 use crate::models::effort_context::EffortContextInput;
+use crate::schema::flow_events::{quantity_unit, resource_type};
 use crate::types::ConfigHash;
 use crate::schema::contribution_events::dsl::*;
 use crate::types::{Audience, JsonField};
@@ -46,11 +47,13 @@ pub struct NewContributionEvent {
     pub host_id: i32,
     pub name: Option<String>,
     pub email: Option<String>,
+    pub resource_type: Option<String>,
+    pub quantity_unit: Option<String>,
     pub availability_days: Option<String>,
     pub availability_times: Option<String>,
     pub notes: Option<String>,
     pub effort: Option<String>,
-    pub hours: f32,
+    pub quantity_value: f32,
 
 }
 
@@ -100,16 +103,16 @@ impl ContributionEventsService {
         let to_id = ledger_domain
             .resolve_entity(&to_name, payload.host_id)
             .unwrap();
-
+            
         let new_flow = crate::models::flow_events::NewFlowEvent {
             id: uuid::Uuid::new_v4().to_string(),
             timestamp,
             from_entity: from_id,
             to_entity: to_id,
             host_id: payload.host_id,
-            resource_type: "work_done".to_string(),
-            quantity_value: payload.hours,
-            quantity_unit: "hours".to_string(),
+            resource_type: payload.resource_type.clone().unwrap_or_else(|| "work_done".to_string()),
+            quantity_value: payload.quantity_value,
+            quantity_unit: payload.quantity_unit.clone().unwrap_or_else(|| "hours".to_string()),
             notes: notes,
             recorded_at: chrono::Utc::now().naive_utc(),
             details: json!({ "type": "celebrate_effort" }).into()  ,

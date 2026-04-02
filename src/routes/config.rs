@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use crate::domains::ledger_domain::LedgerDomain;
 use crate::errors::app_error::AppError;
+use crate::middleware::host::{self, HostContext};
 use crate::middleware::host_utils::require_host;
 use crate::routes::{register, role_allows, routes};
 use crate::services::contribute_events::ContributionDomain;
@@ -25,10 +26,11 @@ pub struct ConfigResponse {
 
 pub async fn get_config_api(
     ledger_domain: web::Data<LedgerDomain>,
+    host: HostContext,
 ) -> Result<HttpResponse, AppError> {
     
     //let contribution = ledger_domain.get_effort_contexts(); // You can handle errors as needed
-    let contribution = match ledger_domain.get_effort_contexts(crate::types::Audience::Public) {
+    let contribution = match ledger_domain.get_effort_contexts(host.0.id, crate::types::Audience::Public) {
         Ok(contribution) => contribution,
         Err(e) => return Err(e),
     };

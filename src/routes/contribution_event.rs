@@ -19,9 +19,11 @@ pub struct ContributionPayload {
     pub email: Option<String>,
     pub availability_days: Option<String>,
     pub availability_times: Option<String>,
+    pub resource_type: Option<String>,
+    pub quantity_unit: Option<String>,
     pub notes: Option<String>,
     pub effort: Option<String>,
-    pub hours: Option<f32>,
+    pub quantity_value: Option<f32>,
 
 }
 
@@ -43,11 +45,13 @@ pub async fn create_contribute_event(
             host_id: host.0.id, // This should be set to the authenticated user's host ID
             name: payload.name,
             email: payload.email,
+            resource_type: payload.resource_type,
+            quantity_unit: payload.quantity_unit,
             availability_days: payload.availability_days,
             availability_times: payload.availability_times,
             notes: payload.effort.clone(),
             effort: payload.effort,
-            hours: payload.hours.unwrap_or(0.0),
+            quantity_value: payload.quantity_value.unwrap_or(0.0),
         };
 
 
@@ -61,7 +65,8 @@ pub async fn create_contribute_event(
 pub async fn list_all_effort_context(
     //contributions: web::Data<ContributionDomain>,
     domain: web::Data<LedgerDomain>,
-    admin: AuthContext
+    admin: AuthContext,
+    host: HostContext,
 ) -> Result<HttpResponse, AppError> {
 
     // Map the admin roles into an Audience
@@ -73,7 +78,7 @@ pub async fn list_all_effort_context(
     };
 
     let result =
-     domain.get_effort_contexts(audience)?;
+     domain.get_effort_contexts(host.0.id,audience)?;
     
 
     Ok(HttpResponse::Ok().json(result))

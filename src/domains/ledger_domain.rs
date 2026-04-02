@@ -57,9 +57,9 @@ impl LedgerDomain {
         Ok(r?)
     }
 
-    pub fn get_effort_contexts(&self, audience: Audience) -> Result<Vec<ConfigHash>, AppError> {
+    pub fn get_effort_contexts(&self, host: i32, audience: Audience) -> Result<Vec<ConfigHash>, AppError> {
         let mut conn = self.conn()?;
-        LedgerService::get_effort_contexts(&mut conn, audience)
+        LedgerService::get_effort_contexts(&mut conn, host, audience)
     }
 
     pub fn get_entity(&self, id: &str) -> Result<Entity, AppError> {
