@@ -1,21 +1,21 @@
 use crate::db::{DbConn, DbPool};
 use crate::errors::app_error::AppError;
 use crate::models::entities::{Entity, EntityUser, NewEntity, NewEntityUser};
+use crate::models::entity_merges::{EntityMerge, NewEntityMerge};
 use crate::models::flow_events::{FlowEvent, NewFlowEvent};
 use crate::schema::flow_events::host_id;
-use crate::schema::{entities, entity_users, flow_events};
-use crate::types::{Audience, ConfigHash, JsonField};
+use crate::schema::{entities, entity_merges, entity_users, flow_events};
 use crate::types::flow_query::{FlowDirection, FlowQuery, FlowQueryBox};
+use crate::types::{Audience, ConfigHash, JsonField};
 use chrono::NaiveDateTime;
 use diesel::{alias, prelude::*};
 use serde::Serialize;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use std::collections::HashSet;
 
 /// Service layer for interacting with entities and flow events in the ledger.
 pub struct LedgerService {
     pub db_pool: DbPool,
-
 }
 
 #[derive(Serialize, Clone)]
@@ -74,7 +74,6 @@ pub struct LedgerEventRow {
 // }
 
 impl LedgerService {
-
     pub fn new(db_pool: DbPool) -> Self {
         Self { db_pool }
     }
@@ -84,7 +83,6 @@ impl LedgerService {
             .get()
             .map_err(|err| AppError::User(err.to_string()))
     }
-
 
     // ----------------------------
     // ENTITY CRUD
@@ -163,14 +161,17 @@ impl LedgerService {
             Ok(id) => Ok(id),
             Err(diesel::result::Error::NotFound) => {
                 // create entity
+                let new_uuid = Uuid::new_v4().to_string();
                 let new_entity = NewEntity {
-                    id: Uuid::new_v4().to_string(),
+                    id: new_uuid.clone(),
                     name: format!("User {}", user),
                     entity_type: "Person".to_string(),
                     host_id: host,
                     created_by: system_entity_id,
                     created_at: chrono::Utc::now().naive_utc(),
                     details: JsonField::default(),
+                    entity_type_id: None,
+                    canonical_entity_id: Some(new_uuid.clone()),
                 };
                 let entity = Self::create_entity(conn, new_entity)?;
 
@@ -194,6 +195,71 @@ impl LedgerService {
         input_name: &str,
         host: i32,
     ) -> Result<Entity, AppError> {
+        use crate::schema::entities::dsl as e;
+        use crate::schema::entity_identities::dsl as i;
+
+        // Normalize input
+        let input = input_name.trim().to_lowercase();
+
+        // 1. Try identity lookup
+        let entity_id = i::entity_identities
+            .filter(i::host_id.eq(host))
+            .filter(i::identity_value.eq(&input))
+            .select(i::entity_id)
+            .first::<String>(conn)
+            .optional()
+            .map_err(|e| AppError::User(e.to_string()))?;
+
+        // 2. Try name fallback if no identity match
+        let entity_id = match entity_id {
+            Some(id) => id,
+            None => e::entities
+                .filter(e::host_id.eq(host))
+                .filter(e::name.eq(&input_name))
+                .select(e::id)
+                .first::<String>(conn)
+                .optional()
+                .map_err(|e| AppError::User(e.to_string()))?
+                .ok_or_else(|| AppError::NotFound("Entity not found".into()))?,
+        };
+
+        // 3. Load entity
+        let mut entity = e::entities
+            .filter(e::id.eq(entity_id))
+            .first::<Entity>(conn)
+            .map_err(|e| AppError::User(e.to_string()))?;
+
+        // 4. Resolve canonical (flatten chain)
+        let mut seen = std::collections::HashSet::new();
+
+        loop {
+            // Prevent infinite loops (safety guard)
+            if !seen.insert(entity.id.clone()) {
+                return Err(AppError::User("Canonical loop detected".into()));
+            }
+
+            let parent_id = match &entity.canonical_entity_id {
+                Some(pid) if pid != &entity.id => pid.clone(),
+                _ => break, // This is the root
+            };
+
+            // Load parent
+            let parent = e::entities
+                .filter(e::id.eq(parent_id))
+                .first::<Entity>(conn)
+                .map_err(|e| AppError::User(e.to_string()))?;
+
+            entity = parent;
+        }
+
+        Ok(entity)
+    }
+
+    pub fn _off_find_entity_by_name(
+        conn: &mut DbConn,
+        input_name: &str,
+        host: i32,
+    ) -> Result<Entity, AppError> {
         use crate::schema::entities::dsl::*;
 
         entities
@@ -207,6 +273,11 @@ impl LedgerService {
         entities::table
             .select(Entity::as_select())
             .filter(entities::host_id.eq(host))
+            .filter(
+                entities::canonical_entity_id
+                    .is_null()
+                    .or(entities::canonical_entity_id.eq(entities::id.nullable())),
+            )
             .load(conn)
             .map_err(|e| e.into())
     }
@@ -255,6 +326,53 @@ impl LedgerService {
             .map_err(|e| e.into())
     }
 
+    pub fn merge_entities(
+        conn: &mut DbConn,
+        source_id: &str,
+        target_id: &str,
+        host: i32,
+        user: i32,
+    ) -> Result<EntityMerge, AppError> {
+        use crate::schema::entities::dsl as e;
+        use crate::schema::entity_identities::dsl::*;
+
+        conn.transaction::<_, AppError, _>(|conn| {
+            // 1. Move identities
+            diesel::update(entity_identities.filter(entity_id.eq(source_id)))
+                .set(entity_id.eq(target_id))
+                .execute(conn)
+                .map_err(|e| AppError::User(e.to_string()))?;
+
+            // 2. Update canonical pointer
+            diesel::update(e::entities.filter(e::id.eq(source_id)))
+                .set(e::canonical_entity_id.eq(Some(target_id.to_string())))
+                .execute(conn)
+                .map_err(|e| AppError::User(e.to_string()))?;
+
+            // 3. Record merge
+            let merge = NewEntityMerge {
+                id: Uuid::new_v4().to_string(),
+                from_entity: source_id.to_string(),
+                to_entity: target_id.to_string(),
+            };
+
+            let merge = LedgerService::create_entity_merge(conn, &merge)?;
+
+            Ok(merge)
+        })
+    }
+
+    pub fn create_entity_merge(
+        conn: &mut SqliteConnection,
+        new: &NewEntityMerge,
+    ) -> QueryResult<EntityMerge> {
+        diesel::insert_into(entity_merges::table)
+            .values(new)
+            .execute(conn)?;
+
+        entity_merges::table.find(&new.id).first(conn)
+    }
+
     pub fn get_all_entities(
         conn: &mut DbConn,
         entity_ids: Vec<String>,
@@ -268,12 +386,55 @@ impl LedgerService {
             .map_err(|e| e.into())
     }
 
-
-    pub fn get_effort_contexts(conn: &mut DbConn, host: i32, audience: Audience) -> Result<Vec<ConfigHash>, AppError> {
-        
+    pub fn get_entities_pointing_to_canonical(
+        conn: &mut DbConn,
+        canonical_id: &str,
+    ) -> Result<Vec<String>, AppError> {
         use crate::schema::entities::dsl::*;
 
-        let  query = entities
+        entities
+            .filter(canonical_entity_id.eq(canonical_id).or(id.eq(canonical_id)))
+            .select(id)
+            .load::<String>(conn)
+            .map_err(|e| e.into())
+    }
+
+    pub fn get_canonical_map(
+        conn: &mut DbConn,
+        entity_ids: Vec<Uuid>,
+    ) -> Result<HashMap<String, String>, AppError> {
+        use crate::schema::entities::dsl::*;
+
+        let results = entities
+            .filter(
+                id.eq_any(
+                    &entity_ids
+                        .iter()
+                        .map(|u| u.to_string())
+                        .collect::<Vec<String>>(),
+                ),
+            )
+            .select((id, canonical_entity_id))
+            .load::<(String, Option<String>)>(conn)?;
+
+        let mut map = HashMap::new();
+
+        for (entity_id, canonical) in results {
+            let root = canonical.unwrap_or_else(|| entity_id.clone());
+            map.insert(entity_id, root);
+        }
+
+        Ok(map)
+    }
+
+    pub fn get_effort_contexts(
+        conn: &mut DbConn,
+        host: i32,
+        audience: Audience,
+    ) -> Result<Vec<ConfigHash>, AppError> {
+        use crate::schema::entities::dsl::*;
+
+        let query = entities
             .order(name.asc())
             .filter(host_id.eq(host))
             .filter(entity_type.eq("project"))
@@ -285,7 +446,7 @@ impl LedgerService {
         //     Audience::Admin => {}
         //     _ => query = query.filter(active_flag.eq(true)),
         // }
-        
+
         let contexts = query
             .load::<(String, String)>(&mut *conn)
             .map_err(AppError::Db)?
@@ -296,85 +457,97 @@ impl LedgerService {
         Ok(contexts)
     }
 
-
     pub fn get_flow_events(
         conn: &mut DbConn,
         flow_query: FlowQuery,
     ) -> Result<(Vec<LedgerEventRow>, Vec<EntityRef>, Vec<String>), AppError> {
         use diesel::prelude::*;
 
-        // --- Step 1: Query flow_events filtered by FlowQuery ---
-        let mut query = flow_events::table
-            .filter(flow_events::host_id.eq(flow_query.host))
-            .into_boxed::<diesel::sqlite::Sqlite>();
+        // --- Step 1: Resolve entity IDs FIRST (owned, no Option) ---
+        let entity_ids: Vec<String> = if let Some(entity) = &flow_query.entity {
+            let root = LedgerService::get_canonical_map(conn, vec![entity.clone()])?
+                .get(&entity.to_string())
+                .cloned()
+                .ok_or_else(|| AppError::NotFound("Entity not found".into()))?;
 
-        // Entity + direction filters
-        if let Some(entity) = flow_query.entity {
-            match flow_query.direction {
-                FlowDirection::From => {
-                    query = query.filter(flow_events::from_entity.eq(entity.to_string()));
-                }
-                FlowDirection::To => {
-                    query = query.filter(flow_events::to_entity.eq(entity.to_string()));
-                }
-                FlowDirection::Both => {
-                    query = query.filter(
-                        flow_events::from_entity
-                            .eq(entity.to_string())
-                            .or(flow_events::to_entity.eq(entity.to_string())),
-                    );
+            LedgerService::get_entities_pointing_to_canonical(conn, &root)?
+        } else {
+            Vec::new()
+        };
+
+        // --- Step 2: Build + execute query in SAME scope as entity_ids ---
+        let rows: Vec<LedgerEventRow> = {
+            let mut query = flow_events::table
+                .filter(flow_events::host_id.eq(flow_query.host))
+                .into_boxed::<diesel::sqlite::Sqlite>();
+
+            // --- Entity filters ---
+            if !entity_ids.is_empty() {
+                match flow_query.direction {
+                    FlowDirection::From => {
+                        query = query.filter(flow_events::from_entity.eq_any(&entity_ids));
+                    }
+                    FlowDirection::To => {
+                        query = query.filter(flow_events::to_entity.eq_any(&entity_ids));
+                    }
+                    FlowDirection::Both => {
+                        query = query.filter(
+                            flow_events::from_entity
+                                .eq_any(&entity_ids)
+                                .or(flow_events::to_entity.eq_any(&entity_ids)),
+                        );
+                    }
                 }
             }
+
+            // --- Date filters ---
+            if let Some(since) = flow_query.since {
+                query = query.filter(flow_events::timestamp.ge(since));
+            }
+            if let Some(until) = flow_query.until {
+                query = query.filter(flow_events::timestamp.le(until));
+            }
+
+            // --- Pagination ---
+            if let Some(limit) = flow_query.limit {
+                query = query.limit(limit);
+            }
+            if let Some(offset) = flow_query.offset {
+                query = query.offset(offset);
+            }
+
+            // --- Execute ---
+            query
+                .order(flow_events::timestamp.desc())
+                .select((
+                    flow_events::id,
+                    flow_events::timestamp,
+                    flow_events::resource_type,
+                    flow_events::quantity_value,
+                    flow_events::quantity_unit,
+                    flow_events::from_entity,
+                    flow_events::to_entity,
+                    flow_events::notes,
+                ))
+                .load(conn)?
+        };
+
+        // --- Step 3: Collect unique entities + resource types ---
+        let mut entity_set = HashSet::new();
+        let mut resource_set = HashSet::new();
+
+        for row in &rows {
+            entity_set.insert(row.from_entity.clone());
+            entity_set.insert(row.to_entity.clone());
+            resource_set.insert(row.resource_type.clone());
         }
 
-        // Date filters
-        if let Some(since) = flow_query.since {
-            query = query.filter(flow_events::timestamp.ge(since));
-        }
-        if let Some(until) = flow_query.until {
-            query = query.filter(flow_events::timestamp.le(until));
-        }
+        let uniq_entities: Vec<String> = entity_set.into_iter().collect();
+        let uniq_rt: Vec<String> = resource_set.into_iter().collect();
 
-        // Pagination
-        if let Some(limit) = flow_query.limit {
-            query = query.limit(limit);
-        }
-        if let Some(offset) = flow_query.offset {
-            query = query.offset(offset);
-        }
+        // --- Step 4: Fetch entity refs ---
+        let entities = Self::get_all_entities(conn, uniq_entities)?;
 
-        // Execute the query
-        let rows: Vec<LedgerEventRow> = query
-            .order(flow_events::timestamp.desc())
-            .select((
-                flow_events::id,
-                flow_events::timestamp,
-                flow_events::resource_type,
-                flow_events::quantity_value,
-                flow_events::quantity_unit,
-                flow_events::from_entity,
-                flow_events::to_entity,
-                flow_events::notes,
-            ))
-            .load(conn)?;
-
-            // --- Step 2: Collect unique entity UUIDs from rows ---
-    let mut entity_set = HashSet::new();
-    let mut rt_set = HashSet::new();
-    for row in &rows {
-        entity_set.insert(row.from_entity.clone());
-        entity_set.insert(row.to_entity.clone());
-        rt_set.insert(row.resource_type.clone());
-    }
-    let uniq_rt: Vec<String> = rt_set.into_iter().collect();
-
-    let uniq_entities: Vec<String> = entity_set.into_iter().collect();
-    let entities = Self::get_all_entities(conn, uniq_entities)?;
-
-    // --- Step 3: Load entities from DB ---
-
-        // Convert rows to DTOs
-        //Ok(rows.into_iter().map(Into::into).collect())
         Ok((rows, entities, uniq_rt))
     }
 

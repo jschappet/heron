@@ -19,4 +19,9 @@ pub mod question_summary;
 pub mod entities;
 pub mod flow_events;
 
+pub mod entity_identities;
+//pub mod entity_relationships;
+pub mod entity_merges;
+pub mod entity_types;
+
 //pub mod ledger_views;

@@ -42,7 +42,7 @@ impl fmt::Display for AppError {
             AppError::Internal(e) => write!(f, "{e}"),
             AppError::BcryptError(e) => write!(f, "Bcrypt error: {}", e),
             AppError::NotFound(e) => write!(f, "Not found: {}", e), // ← display message
-            AppError::BadRequest(e) => write!(f, "Not found: {}", e), // ← display message
+            AppError::BadRequest(e) => write!(f, "Bad Request: {}", e), // ← display message
             AppError::Unauthorized => write!(f, "Unauthorized"), // ← display message
 
         }
@@ -133,6 +133,13 @@ impl ResponseError for AppError {
                 HttpResponse::InternalServerError().json(resp)
             },
         }
+    }
+}
+
+
+impl AppError {
+    pub fn is_not_found(&self) -> bool {
+        matches!(self, AppError::NotFound(_))
     }
 }
 

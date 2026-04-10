@@ -14,7 +14,8 @@ pub struct Entity {
     pub created_by: String,
     pub created_at: NaiveDateTime,
     pub details: JsonField,
-    
+    pub entity_type_id: Option<String>,
+    pub canonical_entity_id: Option<String>,
 }
 
 #[derive(Insertable, AsChangeset, Serialize, Deserialize)]
@@ -27,6 +28,8 @@ pub struct NewEntity {
     pub created_by: String,
     pub created_at: NaiveDateTime,
     pub details: JsonField,
+    pub entity_type_id: Option<String>,
+    pub canonical_entity_id: Option<String>,
     
 }
 
