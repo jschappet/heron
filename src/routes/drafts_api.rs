@@ -10,7 +10,7 @@ use crate::types::{DocType, DraftStatus, FrontendSchema, JsonField, MemberRole, 
 use crate::validator::{AuthContext, require_role_for_host};
 use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
 
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 use serde::Deserialize;
@@ -513,27 +513,24 @@ pub async fn bulk_approve(
 }
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
     .service(register(
             "draft_create_public",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "new",
             create_draft_api,
             MemberRole::Member,
         ))
 }
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-
+pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
             "draft_bulk_approve",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "bulk/approve",
             bulk_approve,
             MemberRole::Admin,
@@ -541,7 +538,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_update",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "update/{id}",
             update_draft_api,
             MemberRole::Member,
@@ -549,7 +546,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_doc_schema",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "doc_schema",
             get_doc_schema,
             MemberRole::Member,
@@ -558,7 +555,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_create",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "new",
             create_draft_api,
             MemberRole::Member,
@@ -566,7 +563,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_list",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "list",
             get_drafts_api,
             MemberRole::Member,
@@ -575,7 +572,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_get",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "get/{id}",
             get_draft_api,
             MemberRole::Member,
@@ -583,7 +580,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_delete",
             Method::DELETE,
-            &full_path,
+            path.as_str(),
             "{id}",
             delete_draft_api,
             MemberRole::Admin,
@@ -592,7 +589,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_submit",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "{id}/submit",
             submit_draft_api,
             MemberRole::Member,
@@ -600,7 +597,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_request_changes",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "{id}/request_changes",
             request_changes_api,
             MemberRole::Reviewer,
@@ -609,7 +606,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_approve",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "{id}/approve",
             approve_draft_api,
             MemberRole::Reviewer,
@@ -617,7 +614,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_deploy",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "{id}/deploy",
             deploy_draft_api,
             MemberRole::Reviewer,
@@ -626,7 +623,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "draft_markdown",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "{id}/md",
             get_draft_md_api,
             MemberRole::Member,

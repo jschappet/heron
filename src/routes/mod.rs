@@ -38,6 +38,18 @@ use serde::Serialize;
 use crate::{middleware::admin_middleware::AdminMiddleware, types::MemberRole};
 use crate::types::method::Method;
 
+pub struct RoutePath(String);
+
+impl RoutePath {
+    pub fn new(parts: &[&str]) -> Self {
+        Self(parts.join("/"))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 //use crate::middleware::admin::AdminMiddleware;
 
 
@@ -214,27 +226,27 @@ where
 pub fn api_scope(path: &'static str) -> Scope {
     //.service(scoped("api", Some(MemberRole::Public), web::scope(""))
     web::scope(path)
-        .service(scoped("/auth", "auth", Some(MemberRole::Public), authentication::scope(vec![path, "auth"])))
-        .service(scoped("/users", "users", Some(MemberRole::Member),users_api::scope(vec![path, "users"])))
-        .service(scoped("/config","config", Some(MemberRole::Public), config::scope(vec![path, "config"])))
-        .service(scoped("/roles", "roles", Some(MemberRole::Member),roles_api::scope(vec![path, "roles"])))
-        .service(scoped("/profile","profile", Some(MemberRole::Member), profile::scope(vec![path, "profile"])))
-        .service(scoped("/memberships","membership", Some(MemberRole::Member), memberships_api::scope(vec![path, "membership"])))
+        .service(scoped("/auth", "auth", Some(MemberRole::Public), authentication::scope(&RoutePath::new(&[path, "auth"]))))
+        .service(scoped("/users", "users", Some(MemberRole::Member), users_api::scope(&RoutePath::new(&[path, "users"]))))
+        .service(scoped("/config", "config", Some(MemberRole::Public), config::scope(&RoutePath::new(&[path, "config"]))))
+        .service(scoped("/roles", "roles", Some(MemberRole::Member), roles_api::scope(&RoutePath::new(&[path, "roles"]))))
+        .service(scoped("/profile", "profile", Some(MemberRole::Member), profile::scope(&RoutePath::new(&[path, "profile"]))))
+        .service(scoped("/memberships", "membership", Some(MemberRole::Member), memberships_api::scope(&RoutePath::new(&[path, "membership"]))))
 
-        .service(scoped("/member","member", Some(MemberRole::Member), member::scope(vec![path, "member"])))
-        .service(scoped("/offers","offers", Some(MemberRole::Member), offers_api::scope(vec![path, "offers"])))
-        
-        .service(scoped("/ratings", "ratings", Some(MemberRole::Member),ratings_api::scope(vec![path, "ratings"])))
-        .service(scoped("/drafts","drafts", None,  drafts_api::scope(vec![path, "drafts"])))
+        .service(scoped("/member", "member", Some(MemberRole::Member), member::scope(&RoutePath::new(&[path, "member"]))))
+        .service(scoped("/offers", "offers", Some(MemberRole::Member), offers_api::scope(&RoutePath::new(&[path, "offers"]))))
 
-        .service(scoped("/upload", "upload", Some(MemberRole::Member),uploads::scope(vec![path, "upload"])))
-        .service(scoped("/weekly-answers", "weekly-answers", Some(MemberRole::Member),weekly_answers::scope(vec![path, "weekly-answers"])))
-        .service(scoped("/ticket", "ticket", Some(MemberRole::Public),ticket_api::scope(vec![path, "ticket"])))
-        .service(scoped("/mail", "mail", Some(MemberRole::Public),mailing_list::scope(vec![path, "mail"])))
-        .service(scoped("/celebrate","celebrate", Some(MemberRole::Public), contribution_event::scope(vec![path, "celebrate"])))
+        .service(scoped("/ratings", "ratings", Some(MemberRole::Member), ratings_api::scope(&RoutePath::new(&[path, "ratings"]))))
+        .service(scoped("/drafts", "drafts", None, drafts_api::scope(&RoutePath::new(&[path, "drafts"]))))
+
+        .service(scoped("/upload", "upload", Some(MemberRole::Member), uploads::scope(&RoutePath::new(&[path, "upload"]))))
+        .service(scoped("/weekly-answers", "weekly-answers", Some(MemberRole::Member), weekly_answers::scope(&RoutePath::new(&[path, "weekly-answers"]))))
+        .service(scoped("/ticket", "ticket", Some(MemberRole::Public), ticket_api::scope(&RoutePath::new(&[path, "ticket"]))))
+        .service(scoped("/mail", "mail", Some(MemberRole::Public), mailing_list::scope(&RoutePath::new(&[path, "mail"]))))
+        .service(scoped("/celebrate", "celebrate", Some(MemberRole::Public), contribution_event::scope(&RoutePath::new(&[path, "celebrate"]))))
         // Twilio integration example
-        .service(scoped("/twilio", "twilio", Some(MemberRole::Public),twilio::scope(vec![path, "twilio"])))
-        .service(scoped("/ledger", "ledger", Some(MemberRole::Member),ledger::scope(vec![path, "ledger"])))
+        .service(scoped("/twilio", "twilio", Some(MemberRole::Public), twilio::scope(&RoutePath::new(&[path, "twilio"]))))
+        .service(scoped("/ledger", "ledger", Some(MemberRole::Member), ledger::scope(&RoutePath::new(&[path, "ledger"]))))
         
         .service(
     web::scope("/admin")
@@ -250,14 +262,14 @@ pub fn api_scope(path: &'static str) -> Scope {
 pub fn admin_scope() -> Scope {    
     let path= "/api/admin";
     web::scope("")
-        .service(scoped("/events", "events", Some(MemberRole::Member), events_api::admin_scope(vec![path, "events"])))
-        .service(scoped("/contrib_context", "contrib", None ,   contribution_event::admin_scope(vec![path, "contrib"])))
-        .service(scoped("/drafts","drafts", None,  drafts_api::admin_scope(vec![path, "drafts"])))
-        .service(scoped("/memberships","memberships", None,  memberships_api::admin_scope(vec![path, "membership"])))
-        .service(scoped("/hosts", "hosts", None, hosts::admin_scope( vec![path, "hosts"] )))
-        .service(scoped("/users", "users", None, users_api::admin_scope( vec![path, "users"] )))
-        .service(scoped("/mail", "mail", Some(MemberRole::Admin),mailing_list::admin_scope(vec![path, "mail"])))
-        .service(scoped("/weekly_answers", "weekly_answers", Some(MemberRole::Admin),weekly_answers::admin_scope(vec![path, "weekly_answers"])))
+        .service(scoped("/events", "events", Some(MemberRole::Member), events_api::admin_scope(&RoutePath::new(&[path, "events"]))))
+        .service(scoped("/contrib_context", "contrib", None, contribution_event::admin_scope(&RoutePath::new(&[path, "contrib"]))))
+        .service(scoped("/drafts", "drafts", None, drafts_api::admin_scope(&RoutePath::new(&[path, "drafts"]))))
+        .service(scoped("/memberships", "memberships", None, memberships_api::admin_scope(&RoutePath::new(&[path, "membership"]))))
+        .service(scoped("/hosts", "hosts", None, hosts::admin_scope(&RoutePath::new(&[path, "hosts"]))))
+        .service(scoped("/users", "users", None, users_api::admin_scope(&RoutePath::new(&[path, "users"]))))
+        .service(scoped("/mail", "mail", Some(MemberRole::Admin), mailing_list::admin_scope(&RoutePath::new(&[path, "mail"]))))
+        .service(scoped("/weekly_answers", "weekly_answers", Some(MemberRole::Admin), weekly_answers::admin_scope(&RoutePath::new(&[path, "weekly_answers"]))))
 
 }
 

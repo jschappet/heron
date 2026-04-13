@@ -9,7 +9,7 @@ use crate::models::user_token::{create_user_token, verify_user_token};
 use crate::models::users::{
     NewUser, PublicUser, User, create_user, delete_user, get_public_users, get_user, get_user_by_username, get_user_by_username_or_email, get_users, set_password, update_user, update_user_details
 };
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 use crate::settings::DeployedEnvironment;
@@ -258,9 +258,7 @@ async fn set_password_new(
 }
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-          
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
     // reset password verification redirect
 
@@ -268,7 +266,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "update_member_profile",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "details",
             update_user_details_api,
             crate::types::MemberRole::Member,
@@ -276,7 +274,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "create_token_reset_password",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "reset-password-request",
             create_token_reset_password,
             crate::types::MemberRole::Public,
@@ -286,7 +284,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "set_password",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "/set-password",
             set_password_new,
             crate::types::MemberRole::Public,
@@ -294,7 +292,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "create",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "create",
             create_user_api,
             crate::types::MemberRole::Admin,
@@ -305,7 +303,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "page",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "page",
             get_users_page,
             crate::types::MemberRole::Admin,
@@ -315,7 +313,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "public_list",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/public_profile",
             get_public_users_api,
             crate::types::MemberRole::Member,
@@ -325,7 +323,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "public_one",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/public_profile/user/{user_id}",
             get_public_user_api,
             crate::types::MemberRole::Member,
@@ -335,7 +333,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/{user_id}",
             get_user_api,
             crate::types::MemberRole::Admin,
@@ -345,7 +343,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_update",
             Method::PUT,
-            &full_path,
+            path.as_str(),
             "/{user_id}",
             update_user_api,
             crate::types::MemberRole::Admin,
@@ -360,7 +358,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "reset_password_with_token",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/reset-password/{token}",
             get_reset_password_page,
             crate::types::MemberRole::Public,
@@ -381,13 +379,12 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         // .service(reset_password_token)
         // .service(get_reset_password_page)
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
    .service(register(
             "user_create",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "",
             create_user_api,
             crate::types::MemberRole::Admin,
@@ -397,7 +394,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_list",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "list",
             get_users_api,
             crate::types::MemberRole::Admin,
@@ -407,7 +404,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_page",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/page",
             get_users_page,
             crate::types::MemberRole::Admin,
@@ -417,7 +414,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_public_list",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/public_profile",
             get_public_users_api,
             crate::types::MemberRole::Member,
@@ -427,7 +424,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_public_one",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/public_profile/user/{user_id}",
             get_public_user_api,
             crate::types::MemberRole::Member,
@@ -437,7 +434,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_get",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/{user_id}",
             get_user_api,
             crate::types::MemberRole::Admin,
@@ -447,7 +444,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_update",
             Method::PUT,
-            &full_path,
+            path.as_str(),
             "/{user_id}",
             update_user_api,
             crate::types::MemberRole::Admin,
@@ -457,7 +454,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_delete",
             Method::DELETE,
-            &full_path,
+            path.as_str(),
             "/{user_id}",
             delete_user_api,
             crate::types::MemberRole::Admin,
@@ -467,7 +464,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "user_details",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "/details",
             update_user_details_api,
             crate::types::MemberRole::Member,

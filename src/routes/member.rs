@@ -1,6 +1,6 @@
 use crate::domains::member_domain::MemberDomain;
 use crate::middleware::host::HostContext;
-use crate::{routes::register, types::method::Method, validator::AuthContext};
+use crate::{routes::{register, RoutePath}, types::method::Method, validator::AuthContext};
 use actix_web::{HttpResponse, Responder, Scope, web};
 
 pub async fn member_content(
@@ -28,13 +28,12 @@ pub async fn member_flows(domain: web::Data<MemberDomain>,
     }
 }
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
             "member_content",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "content",
             member_content,
             crate::types::MemberRole::Member,
@@ -42,7 +41,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "member_flows",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "flows",
             member_flows,
             crate::types::MemberRole::Member,

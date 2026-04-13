@@ -1,5 +1,5 @@
 use actix_web::{HttpResponse, Responder, Scope, web};
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 // #[get("/all")]
@@ -123,13 +123,12 @@ pub async fn get_summaries(data: web::Data<crate::app_state::AppState>) -> impl 
 }
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");  
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
 .service(register(
     "get_all_ratings",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "all",
     get_ratings,
     crate::types::MemberRole::Public,
@@ -137,7 +136,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "save_rating",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "save",
     save_ratings,
     crate::types::MemberRole::Member,
@@ -145,7 +144,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_summaries_array",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "summary/array",
     get_summaries_array,
     crate::types::MemberRole::Public,
@@ -153,7 +152,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "rebuild_rating_summary",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "rebuild-summary",
     rebuild_summary_route,
     crate::types::MemberRole::Admin,
@@ -161,7 +160,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_summaries_map",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "summary/all",
     get_summaries,
     crate::types::MemberRole::Public,

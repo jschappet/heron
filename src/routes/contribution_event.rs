@@ -1,6 +1,6 @@
 use crate::domains::ledger_domain::LedgerDomain;
 use crate::middleware::host::HostContext;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::{Audience, MemberRole};
 use crate::validator::{AuthContext, has_role};
 use crate::errors::app_error::AppError;
@@ -86,13 +86,12 @@ pub async fn list_all_effort_context(
 
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
             "create_contribute_event",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "/efforts",
             create_contribute_event,
             crate::types::MemberRole::Public,
@@ -100,7 +99,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "list_all_effort_context",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/contexts",
             list_all_effort_context,
             crate::types::MemberRole::Public,
@@ -108,8 +107,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 }
 
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn admin_scope(_path: &RoutePath) -> Scope {
     web::scope("")
         
 }
