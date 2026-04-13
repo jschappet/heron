@@ -49,6 +49,18 @@ impl fmt::Display for AppError {
     }
 }
 
+
+impl From<diesel::result::Error> for AppError {
+    fn from(err: diesel::result::Error) -> Self {
+        match err {
+            diesel::result::Error::NotFound => {
+                AppError::NotFound("Record not found".into())
+            }
+            _ => AppError::Db(err),
+        }
+    }
+}
+
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         match self {
@@ -63,12 +75,12 @@ impl ResponseError for AppError {
             }
             AppError::Unauthorized => {
                 let resp = ErrorResponse {
-                    code: 400,
-                    error_type: "UserError",
+                    code: 401,
+                    error_type: "Unauthorized",
                     message: String::from("Unauthorized"),
                 };
                 
-                HttpResponse::InternalServerError().json(resp)
+                HttpResponse::Unauthorized().json(resp)
             }
             AppError::Auth(e) => {
                 // Delegate auth errors
@@ -90,7 +102,7 @@ impl ResponseError for AppError {
                     message: e.clone(),
                 };
                 log::error!("BadRequest: {}", e);
-                HttpResponse::InternalServerError().json(resp)
+                HttpResponse::BadRequest().json(resp)
             }
             AppError::Db(e) => {
                 let error_id = uuid::Uuid::new_v4();
