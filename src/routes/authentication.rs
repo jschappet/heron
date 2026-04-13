@@ -6,7 +6,7 @@ use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
 use crate::middleware::host_utils::require_host;
 use crate::models::user_token::verify_user_token;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use serde::Deserialize;
 //use crate::models::offers::*;
 //use crate::routes::offers_api;
@@ -154,14 +154,12 @@ async fn logout(session: Session) -> Result<HttpResponse, AppError> {
    ========================= */
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
             "register_new_user",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "register",
             register_new_user,
             crate::types::MemberRole::Public,
@@ -169,7 +167,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "verify_account",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/token/{token}",
             verify_account,
             crate::types::MemberRole::Public,
@@ -177,7 +175,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "login",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "/login",
             login,
             crate::types::MemberRole::Public,
@@ -185,7 +183,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "logout",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "/logout",
             logout,
             crate::types::MemberRole::Member,

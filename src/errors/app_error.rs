@@ -162,12 +162,6 @@ impl From<AuthError> for AppError {
     }
 }
 
-impl From<diesel::result::Error> for AppError {
-    fn from(err: diesel::result::Error) -> Self {
-        AppError::Db(err)
-    }
-}
-
 impl From<R2D2Error> for AppError {
     fn from(err: R2D2Error) -> Self {
         AppError::R2D2(err)

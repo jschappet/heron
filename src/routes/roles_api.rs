@@ -2,7 +2,7 @@ use actix_web::{HttpResponse, Responder, Scope, web};
 
 use crate::app_state::AppState;
 use crate::models::roles::*;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 // #[post("")]
@@ -57,13 +57,12 @@ pub async fn delete_role_api(data: web::Data<AppState>, id: web::Path<i32>) -> i
     }
 }
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
             "role_create",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "",
             create_role_api,
             crate::types::MemberRole::Admin,
@@ -71,7 +70,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "roles_list",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "list",
             get_roles_api,
             crate::types::MemberRole::Admin,
@@ -79,7 +78,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "role_get",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "{id}",
             get_role_api,
             crate::types::MemberRole::Admin,
@@ -87,7 +86,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "role_update",
             Method::PUT,
-            &full_path,
+            path.as_str(),
             "{id}",
             update_role_api,
             crate::types::MemberRole::Admin,
@@ -95,7 +94,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "role_delete",
             Method::DELETE,
-            &full_path,
+            path.as_str(),
             "{id}",
             delete_role_api,
             crate::types::MemberRole::Admin,

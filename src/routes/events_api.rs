@@ -3,7 +3,7 @@
 
 use actix_web::{HttpResponse, Responder, Scope, web::{self}};
 use serde::Serialize;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 use crate::{app_state::AppState, db::{PendingRegistration, load_pending_registrations}, models::events::{NewEvent, create_event, delete_event, get_event, get_events, update_event}};
 
@@ -111,8 +111,7 @@ async fn get_pending_registrations_html(
 }
 
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
     // Events API Registration
 
@@ -120,7 +119,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "create_event",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "events",
     create_event_api,
     crate::types::MemberRole::Admin,
@@ -130,7 +129,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_events",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "events",
     get_events_api,
     crate::types::MemberRole::Admin,
@@ -140,7 +139,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_event",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "event/{event_id}",
     get_event_api,
     crate::types::MemberRole::Admin,
@@ -150,7 +149,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "update_event",
     Method::PUT,
-    &full_path,
+    path.as_str(),
     "event/{event_id}",
     update_event_api,
     crate::types::MemberRole::Admin,
@@ -160,7 +159,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "delete_event",
     Method::DELETE,
-    &full_path,
+    path.as_str(),
     "event/{event_id}",
     delete_event_api,
     crate::types::MemberRole::Admin,
@@ -170,7 +169,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_pending_registrations",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "events/{event_id}/pending-registrations",
     get_pending_registrations_html,
     crate::types::MemberRole::Admin,

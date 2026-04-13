@@ -1,5 +1,5 @@
 use crate::domains::weekly_reflection_domain::{QuestionAnswers, WeeklyReflectionDomain};
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 use actix_web::{HttpResponse, Responder, Scope, web};
 use serde::Deserialize;
@@ -111,14 +111,13 @@ async fn upload_questions(
     }
 }
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         // POST / (submit weekly answers)
         .service(register(
             "weekly_answers_submit",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "",
             submit_weekly_answers,
             crate::types::MemberRole::Public,
@@ -127,7 +126,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_answers_by_question",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "question/{uuid}/answers",
             get_answers,
             crate::types::MemberRole::Public,
@@ -174,14 +173,13 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
     // ))
 }
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
         // GET /all (all answers)
         .service(register(
             "weekly_answers_all_respondance",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "all",
             get_list_of_respondance,
             crate::types::MemberRole::Admin,
@@ -189,7 +187,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "weekly_answers_get_response",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "response/{uuid}/{id}",
             get_response,
             crate::types::MemberRole::Admin,
@@ -197,7 +195,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_all_weekly_answers",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "all",
             get_all_answers,
             crate::types::MemberRole::Admin,
@@ -206,7 +204,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "upload_questions",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "questions/upload",
             upload_questions,
             crate::types::MemberRole::Admin,

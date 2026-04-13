@@ -3,7 +3,7 @@ use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
 use chrono::{NaiveDateTime, Utc, Duration};
 use diesel::prelude::*;
 use crate::errors::app_error::AppError;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 //use diesel::sqlite::SqliteConnection;
 //use image::{ImageFormat, Luma};
@@ -524,15 +524,13 @@ mod integration_tests {
     }
 }
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
     // POST /subscribe
 .service(register(
     "subscribe",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "subscribe",
     subscribe,
     crate::types::MemberRole::Public,
@@ -542,7 +540,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "confirm_subscription",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "confirm/{token}",
     confirm,
     crate::types::MemberRole::Public,
@@ -552,7 +550,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "unsubscribe",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "unsubscribe/{token}",
     unsubscribe,
     crate::types::MemberRole::Public,
@@ -562,13 +560,12 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 
 
 // GET /mailing_list
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
     .service(register(
     "list_subscribers",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "mailing_list",
     list_subscribers,
     crate::types::MemberRole::Admin,

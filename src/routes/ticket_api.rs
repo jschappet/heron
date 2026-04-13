@@ -2,7 +2,7 @@
 use actix_web::{HttpResponse, Responder, Scope, http::header::{ContentDisposition, DispositionParam, DispositionType}, web};
 use image::{ImageFormat, Luma};
 use serde::Deserialize;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 use crate::{app_state::AppState, models::ticket::{NewTicket, assign_ticket_db, create_ticket, delete_ticket, get_ticket, get_tickets, get_tickets_for_event, update_ticket}};
 
@@ -130,13 +130,12 @@ async fn assign_ticket(
 }
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
     "create_ticket",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "",
     create_ticket_api,
     crate::types::MemberRole::Member,
@@ -144,7 +143,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_tickets",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "",
     get_tickets_api,
     crate::types::MemberRole::Public,
@@ -152,7 +151,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_ticket",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "{ticket_id}",
     get_ticket_api,
     crate::types::MemberRole::Public,
@@ -160,7 +159,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_tickets_for_event",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "event/{new_event_id}",
     get_tickets_for_event_api,
     crate::types::MemberRole::Public,
@@ -168,7 +167,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "update_ticket",
     Method::PUT,
-    &full_path,
+    path.as_str(),
     "{ticket_id}",
     update_ticket_api,
     crate::types::MemberRole::Member,
@@ -176,7 +175,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "delete_ticket",
     Method::DELETE,
-    &full_path,
+    path.as_str(),
     "{ticket_id}",
     delete_ticket_api,
     crate::types::MemberRole::Admin,
@@ -184,7 +183,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "generate_ticket_qr",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "{ticket_id}/qr",
     generate_qr_code,
     crate::types::MemberRole::Public,
@@ -192,7 +191,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "assign_ticket",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "assign-ticket",
     assign_ticket,
     crate::types::MemberRole::Admin,

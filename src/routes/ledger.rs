@@ -4,7 +4,7 @@ use crate::middleware::host::{HostContext};
 
 use crate::models::entities::NewEntity;
 use crate::models::flow_events::NewFlowEvent;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::JsonField;
 use crate::types::flow_query::{FlowDirection, FlowQuery};
 //use crate::services::hosts::HostDomain;
@@ -292,15 +292,13 @@ async fn get_ledger(
 // -----------------------------
 // SCOPE REGISTRATION
 // -----------------------------
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         // Entities
         .service(register(
             "create_entity",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "entity",
             create_entity,
             crate::types::MemberRole::Admin,
@@ -308,7 +306,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_entities",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "entities",
             get_entities,
             crate::types::MemberRole::Public,
@@ -319,7 +317,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "merge_entities",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "merge",
             merge_entities,
             crate::types::MemberRole::Admin,
@@ -327,7 +325,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_entity",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "entity/{id}",
             get_entity,
             crate::types::MemberRole::Public,
@@ -336,7 +334,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "submit_flow",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "flow",
             submit_flow,
             crate::types::MemberRole::Admin,
@@ -344,7 +342,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_entity_flows",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "entity/{id}/flows",
             get_entity_flows,
             crate::types::MemberRole::Public,
@@ -352,7 +350,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_ledger",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "ledger.json",
             get_ledger,
             crate::types::MemberRole::Public,
@@ -360,7 +358,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "ledger_submit_bulk_flow",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "submit/bulk",
             submit_bulk_flows,
             crate::types::MemberRole::Admin,
@@ -368,7 +366,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "submit_bulk_entities",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "submit/entities/bulk",
             submit_bulk_entities,
             crate::types::MemberRole::Admin,

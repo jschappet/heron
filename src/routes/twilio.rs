@@ -1,7 +1,7 @@
 use actix_web::{HttpResponse, Responder, Scope, web};
 use chrono::{NaiveDateTime, Utc};
 use diesel::prelude::*;
-use crate::{app_state::AppState, routes::register, schema::sms_replies::dsl::*, types::method::Method};
+use crate::{app_state::AppState, routes::{register, RoutePath}, schema::sms_replies::dsl::*, types::method::Method};
 
 use serde::{Deserialize, Serialize};
 use reqwest::Client;
@@ -194,13 +194,12 @@ struct SendSmsRequest {
 }
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
             "replies",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "",
             get_sms_replies,
             crate::types::MemberRole::Admin,
@@ -210,7 +209,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "webhook",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "",
             receive_sms_reply,
             crate::types::MemberRole::Public,
@@ -220,7 +219,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "send",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "",
             send_sms_api,
             crate::types::MemberRole::Admin,
