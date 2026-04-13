@@ -157,26 +157,19 @@ impl LedgerDomain {
         to_entity: &str,
         host: i32,
         user: i32,
-    ) -> Result<(), AppError> {
+    ) -> Result<crate::models::entity_merges::EntityMerge, AppError> {
         let mut conn = self.conn()?;
 
         LedgerService::merge_entities(&mut conn, from_entity, to_entity, host, user)
-            .map_err(|e| AppError::User(e.to_string()))?;
-
-        Ok(())
+            .map_err(|e| AppError::User(e.to_string()))
     }
     pub fn find_or_create_entity(&self, input: &str, host: i32) -> Result<String, AppError> {
         let mut conn = self.conn()?;
 
-        if let Ok(entity) = LedgerService::find_entity_by_name(&mut conn, input, host) {
-            return Ok(entity.id);
-        }
-
-        // Only create if it's truly not found
         match LedgerService::find_entity_by_name(&mut conn, input, host) {
+            Ok(entity) => return Ok(entity.id),
             Err(AppError::NotFound(_)) => {}
             Err(e) => return Err(e),
-            _ => {}
         }
 
         let id = Uuid::new_v4().to_string();

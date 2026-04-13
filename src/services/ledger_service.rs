@@ -331,10 +331,35 @@ impl LedgerService {
         source_id: &str,
         target_id: &str,
         host: i32,
-        user: i32,
+        _user: i32, // TODO: store in entity_merges once merged_by column is added
     ) -> Result<EntityMerge, AppError> {
         use crate::schema::entities::dsl as e;
         use crate::schema::entity_identities::dsl::*;
+
+        // Validate both entities exist and belong to this host
+        let source_exists = e::entities
+            .filter(e::id.eq(source_id).and(e::host_id.eq(host)))
+            .count()
+            .get_result::<i64>(conn)
+            .map_err(|err| AppError::User(err.to_string()))?;
+        if source_exists == 0 {
+            return Err(AppError::NotFound(format!(
+                "Source entity {} not found on this host",
+                source_id
+            )));
+        }
+
+        let target_exists = e::entities
+            .filter(e::id.eq(target_id).and(e::host_id.eq(host)))
+            .count()
+            .get_result::<i64>(conn)
+            .map_err(|err| AppError::User(err.to_string()))?;
+        if target_exists == 0 {
+            return Err(AppError::NotFound(format!(
+                "Target entity {} not found on this host",
+                target_id
+            )));
+        }
 
         conn.transaction::<_, AppError, _>(|conn| {
             // 1. Move identities
