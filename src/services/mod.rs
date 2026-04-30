@@ -1,4 +1,5 @@
 pub mod contribute_events;
+pub mod sms;
 pub mod hosts;
 
 pub mod weekly_reflection_service;

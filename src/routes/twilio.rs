@@ -1,97 +1,47 @@
 use actix_web::{HttpResponse, Responder, Scope, web};
-use chrono::{NaiveDateTime, Utc};
-use diesel::prelude::*;
-use crate::{app_state::AppState, routes::{register, RoutePath}, schema::sms_replies::dsl::*, types::method::Method};
-
+use actix_web::web::Bytes;
 use serde::{Deserialize, Serialize};
-use reqwest::Client;
+use serde_json::Value;
 
-// Diesel model
-#[derive(Debug, Queryable, Selectable, Identifiable, Serialize, Deserialize)]
-#[diesel(table_name = crate::schema::sms_replies)]
-pub struct SmsReply {
-    pub id: i32,
-    pub registration_id: Option<i32>,
-    pub to_number: String,
-    pub from_number: String,
-    pub body: String,
-    pub received_at: NaiveDateTime,
-    pub parsed_response: Option<String>,
-    pub raw_payload: Option<String>,
-}
+use crate::app_state::AppState;
+use crate::routes::{register, RoutePath};
+use crate::services::sms::{get_all_sms_replies, insert_sms_reply, send_sms};
+use crate::types::method::Method;
 
-// Struct for insert
-#[derive(Debug, Insertable)]
-#[diesel(table_name = crate::schema::sms_replies)]
-pub struct NewSmsReply {
-    pub registration_id: Option<i32>,
-    pub from_number: String,
-    pub to_number: String,
-    pub body: String,
-    pub received_at: NaiveDateTime,
-    pub parsed_response: Option<String>,
-    pub raw_payload: Option<String>,
-}
-
-// Deserialize incoming Twilio webhook
 #[derive(Debug, Deserialize)]
-#[allow(non_snake_case)]
-pub struct TwilioSmsPayload {
-    pub From: String,
-    pub To: String,
-    pub Body: String,
+#[serde(rename_all = "camelCase")]
+pub struct SmsGateWebhook {
+    pub device_id: String,
+    pub event: String,
+    pub id: String,
+    pub payload: SmsGatePayload,
+    pub webhook_id: String,
 }
 
-// DB insert function
-pub fn insert_sms_reply(
-    conn: &mut SqliteConnection,
-    from: String,
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SmsGatePayload {
+    pub message_id: String,
+    pub body: String,
+    pub sender: String,
+    pub recipient: String,
+    pub phone_number: String,
+    pub sim_number: i32,
+    pub received_at: String,
+    pub subject: String,
+    pub attachments: Vec<Value>,
+}
+
+#[derive(Deserialize, Serialize)]
+struct SendSmsRequest {
     to: String,
-    other_body: String,
-) -> QueryResult<SmsReply> {
-
-
-    let new_reply = NewSmsReply {
-        from_number: from,
-        registration_id: None, // Set later if needed
-        to_number: to,
-        body: other_body,
-        received_at: Utc::now().naive_utc(),
-        parsed_response: None, // Optional, can be set later
-        raw_payload: None, // Optional, can be set later
-    };
-
-    diesel::insert_into(sms_replies)
-        .values(&new_reply)
-        .execute(conn)?;
-
-    sms_replies
-        .order(id.desc())
-        .first::<SmsReply>(conn)
+    body: String,
 }
 
-// TODO Create a sms_replies view to return all replies
-// this should display all of the replies and include options to send a reply back to the user
-// 
-fn get_all_sms_replies(
-    conn: &mut SqliteConnection,
-) -> QueryResult<Vec<SmsReply>> {
-    sms_replies
-        .order(received_at.desc())
-        .load::<SmsReply>(conn)
-}
-
-// TODO create api endpoint to get all sms replies
-// This will be used to display all replies in the admin panel
-// #[get("/sms_replies")]
-async fn get_sms_replies(
-    data: web::Data<AppState>,
-) -> impl Responder {
+async fn get_sms_replies(data: web::Data<AppState>) -> impl Responder {
     let mut conn = data.db_pool.get().expect("Database connection failed");
     match get_all_sms_replies(&mut conn) {
-        Ok(replies) => {
-            HttpResponse::Ok().json(replies)
-        },
+        Ok(replies) => HttpResponse::Ok().json(replies),
         Err(e) => {
             eprintln!("DB query error: {:?}", e);
             HttpResponse::InternalServerError().body("Error fetching SMS replies")
@@ -99,31 +49,27 @@ async fn get_sms_replies(
     }
 }
 
-// Actix handler
-// #[post("/webhook")]
-async fn receive_sms_reply(
-    form: web::Form<TwilioSmsPayload>,
-    data: web::Data<AppState>,
-) -> impl Responder {
-    let mut conn  = &mut data.db_pool.get()
-        .expect("Database connection failed");
+async fn receive_sms_reply(in_body: Bytes, data: web::Data<AppState>) -> impl Responder {
+    let raw = String::from_utf8_lossy(&in_body).to_string();
+    log::info!("SMSGate webhook received: {}", raw);
+
+    let webhook: SmsGateWebhook = match serde_json::from_slice(&in_body) {
+        Ok(w) => w,
+        Err(e) => {
+            log::warn!("Failed to parse SMSGate payload: {}", e);
+            return HttpResponse::BadRequest().body("Invalid payload");
+        }
+    };
+
+    let mut conn = data.db_pool.get().expect("Database connection failed");
     match insert_sms_reply(
         &mut conn,
-        form.From.clone(),
-        form.To.clone(),
-        form.Body.clone(),
+        webhook.payload.sender,
+        webhook.payload.recipient,
+        webhook.payload.body,
+        Some(raw),
     ) {
-        Ok(_) => {
-            // Create a response to Twilio
-            let response = r###"<?xml version="1.0" encoding="UTF-8"?>
-                <Response>
-                    <Message>Thank you for your message! We will get back to you shortly.</Message>
-                </Response>"###;
-            HttpResponse::Ok()
-                .content_type("application/xml")
-                .body(response)
-
-        },
+        Ok(_) => HttpResponse::Ok().finish(),
         Err(e) => {
             eprintln!("DB insert error: {:?}", e);
             HttpResponse::InternalServerError().body("Error storing message")
@@ -131,54 +77,11 @@ async fn receive_sms_reply(
     }
 }
 
-
-
-pub async fn send_sms(
-    data: web::Data<AppState>,
-    to: &str,
-    other_body: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let account_sid = &data.settings.twilio.account_sid;
-    let auth_token = &data.settings.twilio.auth_token;
-    let from = &data.settings.twilio.phone_number;
-    // Construct the Twilio API URL
-
-    let url = format!(
-        "https://api.twilio.com/2010-04-01/Accounts/{}/Messages.json",
-        account_sid
-    );
-
-    let client = Client::new();
-
-    let params = [
-        ("To", to),
-        ("From", from),
-        ("Body", other_body),
-    ];
-
-    let res = client
-        .post(&url)
-        .basic_auth(account_sid, Some(auth_token))
-        .form(&params)
-        .send()
-        .await?;
-
-    if res.status().is_success() {
-        Ok(())
-    } else {
-        let text = res.text().await?;
-        Err(format!("Twilio API error: {}", text).into())
-    }
-}
-
-
-// #[post("/send_sms")]
 async fn send_sms_api(
     form_data: web::Json<SendSmsRequest>,
     data: web::Data<AppState>,
-
 ) -> impl Responder {
-    match send_sms(data, &form_data.to, &form_data.body).await {
+    match send_sms(&data.settings.smsgate, &form_data.to, &form_data.body).await {
         Ok(_) => HttpResponse::Ok().body("SMS sent"),
         Err(e) => {
             eprintln!("Error sending SMS: {:?}", e);
@@ -186,13 +89,6 @@ async fn send_sms_api(
         }
     }
 }
-
-#[derive(Deserialize)]
-struct SendSmsRequest {
-    to: String,
-    body: String,
-}
-
 
 pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
@@ -204,28 +100,20 @@ pub fn scope(path: &RoutePath) -> Scope {
             get_sms_replies,
             crate::types::MemberRole::Admin,
         ))
-
-        // Twilio webhook (public — Twilio must reach it)
         .service(register(
             "webhook",
             Method::POST,
             path.as_str(),
-            "",
+            "webhook",
             receive_sms_reply,
             crate::types::MemberRole::Public,
         ))
-
-        // Admin: send outbound SMS
         .service(register(
             "send",
             Method::POST,
             path.as_str(),
-            "",
+            "send",
             send_sms_api,
             crate::types::MemberRole::Admin,
         ))
-
-// .service(receive_sms_reply)
-//         .service(send_sms_api)
-//         .service(get_sms_replies)
 }

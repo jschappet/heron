@@ -10,6 +10,7 @@ pub mod user_token;
 pub mod drafts;
 pub mod ticket;
 pub mod context;
+pub mod sms_replies;
 
 pub mod events;
 

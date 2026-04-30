@@ -1,7 +1,7 @@
 use actix_web::{HttpResponse, Responder, Scope, web};
 //use chrono::{NaiveDateTime, Utc};
 use diesel::prelude::*;
-use crate::{app_state::AppState, schema::sms_replies::dsl::*, routes::twilio::SmsReply};
+use crate::{app_state::AppState, schema::sms_replies::dsl::*, models::sms_replies::SmsReply};
 
 use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
