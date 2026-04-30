@@ -1,9 +1,9 @@
 use actix_web::{HttpResponse, Responder, Scope, web};
 //use chrono::{NaiveDateTime, Utc};
 use diesel::prelude::*;
-use crate::{app_state::AppState, schema::sms_replies::dsl::*, routes::twilio::SmsReply};
+use crate::{app_state::AppState, schema::sms_replies::dsl::*, models::sms_replies::SmsReply};
 
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 //use serde::{Deserialize, Serialize};
@@ -39,13 +39,12 @@ async fn get_sms_replies(
 
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
     .service(register(
     "get_sms_replies",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "",
     get_sms_replies,
     crate::types::MemberRole::Public,

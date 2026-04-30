@@ -6,7 +6,7 @@ use crate::domains::ledger_domain::LedgerDomain;
 use crate::errors::app_error::AppError;
 use crate::middleware::host::{self, HostContext};
 use crate::middleware::host_utils::require_host;
-use crate::routes::{register, role_allows, routes};
+use crate::routes::{register, role_allows, routes, RoutePath};
 use crate::services::contribute_events::ContributionDomain;
 use crate::types::method::Method;
 use crate::types::{ConfigHash, DraftStatus, MemberRole};
@@ -135,12 +135,24 @@ pub async fn capabilities(user: Option<AuthContext>) -> impl Responder {
 
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path= parent_path.join("/");
+async fn alpine_min() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("application/javascript")
+        .body(include_bytes!("../../alpine.min.js").as_ref())
+}
 
+async fn alpine_custom() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("application/javascript")
+        .body(include_bytes!("../../alpine_custom.js").as_ref())
+}
+
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
-        .service(register("config", Method::GET, &full_path, "", get_config_api, MemberRole::Public))
-        .service(register("online", Method::GET, &full_path, "/ONLINE", online, MemberRole::Public))
-        .service(register("ping", Method::GET, &full_path, "/ping", ping, MemberRole::Public))
-        .service(register("capabilities", Method::GET, &full_path, "/capabilities", capabilities, MemberRole::Public))
+        .service(register("config", Method::GET, path.as_str(), "", get_config_api, MemberRole::Public))
+        .service(register("online", Method::GET, path.as_str(), "/ONLINE", online, MemberRole::Public))
+        .service(register("ping", Method::GET, path.as_str(), "/ping", ping, MemberRole::Public))
+        .service(register("capabilities", Method::GET, path.as_str(), "/capabilities", capabilities, MemberRole::Public))
+        .service(register("alpine.min.js", Method::GET, path.as_str(), "/alpine.min.js", alpine_min, MemberRole::Public))
+        .service(register("alpine_custom.js", Method::GET, path.as_str(), "/alpine_custom.js", alpine_custom, MemberRole::Public))
 }

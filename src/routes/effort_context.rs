@@ -1,10 +1,10 @@
 
 use actix_web::{Scope, web};
+use crate::routes::RoutePath;
 
 //, types::AdminContext
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn admin_scope(_path: &RoutePath) -> Scope {
     web::scope("/effort_context")
       //  .service(list_admin)
      //   .service(create)

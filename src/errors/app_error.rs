@@ -42,9 +42,21 @@ impl fmt::Display for AppError {
             AppError::Internal(e) => write!(f, "{e}"),
             AppError::BcryptError(e) => write!(f, "Bcrypt error: {}", e),
             AppError::NotFound(e) => write!(f, "Not found: {}", e), // ← display message
-            AppError::BadRequest(e) => write!(f, "Not found: {}", e), // ← display message
+            AppError::BadRequest(e) => write!(f, "Bad Request: {}", e), // ← display message
             AppError::Unauthorized => write!(f, "Unauthorized"), // ← display message
 
+        }
+    }
+}
+
+
+impl From<diesel::result::Error> for AppError {
+    fn from(err: diesel::result::Error) -> Self {
+        match err {
+            diesel::result::Error::NotFound => {
+                AppError::NotFound("Record not found".into())
+            }
+            _ => AppError::Db(err),
         }
     }
 }
@@ -63,12 +75,12 @@ impl ResponseError for AppError {
             }
             AppError::Unauthorized => {
                 let resp = ErrorResponse {
-                    code: 400,
-                    error_type: "UserError",
+                    code: 401,
+                    error_type: "Unauthorized",
                     message: String::from("Unauthorized"),
                 };
                 
-                HttpResponse::InternalServerError().json(resp)
+                HttpResponse::Unauthorized().json(resp)
             }
             AppError::Auth(e) => {
                 // Delegate auth errors
@@ -90,7 +102,7 @@ impl ResponseError for AppError {
                     message: e.clone(),
                 };
                 log::error!("BadRequest: {}", e);
-                HttpResponse::InternalServerError().json(resp)
+                HttpResponse::BadRequest().json(resp)
             }
             AppError::Db(e) => {
                 let error_id = uuid::Uuid::new_v4();
@@ -136,16 +148,17 @@ impl ResponseError for AppError {
     }
 }
 
+
+impl AppError {
+    pub fn is_not_found(&self) -> bool {
+        matches!(self, AppError::NotFound(_))
+    }
+}
+
 // Allow `?` operator conversions
 impl From<AuthError> for AppError {
     fn from(err: AuthError) -> Self {
         AppError::Auth(err)
-    }
-}
-
-impl From<diesel::result::Error> for AppError {
-    fn from(err: diesel::result::Error) -> Self {
-        AppError::Db(err)
     }
 }
 

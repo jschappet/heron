@@ -4,7 +4,7 @@ use crate::app_state::AppState;
 use crate::errors::app_error::AppError;
 use crate::models::memberships::*;
 use crate::validator::AuthContext;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 // #[post("")]
@@ -50,9 +50,7 @@ pub async fn delete_membership_api(
     Ok(HttpResponse::Ok().body("Deleted"))
 }
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("/")
         //.service(create_membership_api)
         // Membership API registrations
@@ -61,7 +59,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "create_membership",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "",
     create_membership_api,
     crate::types::MemberRole::Admin,
@@ -71,7 +69,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_memberships",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "",
     get_memberships_api,
     crate::types::MemberRole::Admin,
@@ -81,9 +79,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         
 }
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-
+pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
 // Membership API registrations
 
@@ -91,7 +87,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "create_membership",
     Method::POST,
-    &full_path,
+    path.as_str(),
     "",
     create_membership_api,
     crate::types::MemberRole::Admin,
@@ -101,7 +97,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "get_memberships_for_user",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "user/{id}",
     get_memberships_for_user_api,
     crate::types::MemberRole::Admin,
@@ -111,7 +107,7 @@ pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "delete_membership",
     Method::DELETE,
-    &full_path,
+    path.as_str(),
     "{id}",
     delete_membership_api,
     crate::types::MemberRole::Admin,

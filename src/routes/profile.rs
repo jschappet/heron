@@ -10,7 +10,7 @@ use crate::{
 };
 use actix_session::Session;
 use actix_web::{HttpResponse, Scope, web};
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 use serde_json::json;
@@ -105,13 +105,12 @@ pub async fn profile_completed_json(
 }
 
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");  
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
 .service(register(
     "profile_json",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "",
     profile_json,
     crate::types::MemberRole::Member,
@@ -119,7 +118,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "profile_offers_json",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "offers",
     profile_offers_json,
     crate::types::MemberRole::Member,
@@ -127,7 +126,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
 .service(register(
     "profile_completed_json",
     Method::GET,
-    &full_path,
+    path.as_str(),
     "completed",
     profile_completed_json,
     crate::types::MemberRole::Member,

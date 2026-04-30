@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 use diesel::prelude::*;
@@ -161,13 +161,12 @@ async fn upload(
     Ok(HttpResponse::BadRequest().json(json!({"error": "No file found"})))
 }
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
     .service(register(
             "upload",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "",
             upload,
             crate::types::MemberRole::Member,
@@ -177,7 +176,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "cleanup",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "/cleanup_unreferenced",
             cleanup_unreferenced,
             crate::types::MemberRole::Admin,

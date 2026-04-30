@@ -4,7 +4,7 @@ use crate::middleware::host::{HostContext};
 
 use crate::models::entities::NewEntity;
 use crate::models::flow_events::NewFlowEvent;
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::JsonField;
 use crate::types::flow_query::{FlowDirection, FlowQuery};
 //use crate::services::hosts::HostDomain;
@@ -49,18 +49,43 @@ async fn create_entity(
 
     let created_by = domain.get_user_entity_id(host.0.id, auth.user_id).unwrap();
 
+    let new_uuid = Uuid::new_v4().to_string();
     let new_entity = crate::models::entities::NewEntity {
-        id: uuid::Uuid::new_v4().to_string(),
+        id: new_uuid.clone(),
         name: payload.name.clone(),
         host_id: host.0.id,
         entity_type: payload.entity_type.clone(),
         created_at: chrono::Utc::now().naive_utc(),
         created_by: created_by,
         details: payload.details.clone(),
+        entity_type_id: None,
+        canonical_entity_id: Some(new_uuid.clone()),
     };
 
     match domain.create_entity(new_entity) {
         Ok(entity) => HttpResponse::Ok().json(entity),
+        Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
+    }
+}
+
+//{
+//  "source_id": "...",
+//  "target_id": "..."
+// }
+#[derive(Debug, Deserialize)]
+pub struct MergeEntitiesPayload {
+    pub source_id: String,
+    pub target_id: String,
+}
+async fn merge_entities(
+    domain: web::Data<LedgerDomain>,
+    payload: web::Json<MergeEntitiesPayload>,
+    host: HostContext, 
+    auth: AuthContext,
+) -> impl Responder {
+    let payload = payload.into_inner();
+    match domain.merge_entities(payload.source_id.as_str(), payload.target_id.as_str(), host.0.id, auth.user_id) {
+        Ok(merge) => HttpResponse::Ok().json(merge),
         Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
     }
 }
@@ -102,16 +127,18 @@ async fn submit_bulk_entities(
 
    
     let created_by = domain.get_user_entity_id(host.0.id, auth.user_id).unwrap();
-    
     let events: Vec<NewEntity> = payload.rows.iter().map(|row| {
+        let new_uuid = Uuid::new_v4().to_string();
         NewEntity {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: new_uuid.clone(),
             name: row.name.clone(),
             host_id: host.0.id,
             entity_type: row.entity_type.clone(),
             created_at: chrono::Utc::now().naive_utc(),
             created_by: created_by.clone(),
             details: row.details.clone(),
+            entity_type_id: None,
+            canonical_entity_id: Some(new_uuid.clone()),
         }
     }).collect();
 
@@ -265,15 +292,13 @@ async fn get_ledger(
 // -----------------------------
 // SCOPE REGISTRATION
 // -----------------------------
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
-
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         // Entities
         .service(register(
             "create_entity",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "entity",
             create_entity,
             crate::types::MemberRole::Admin,
@@ -281,15 +306,26 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_entities",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "entities",
             get_entities,
             crate::types::MemberRole::Public,
         ))
+
+        //merge_entities
+
+        .service(register(
+            "merge_entities",
+            Method::POST,
+            path.as_str(),
+            "merge",
+            merge_entities,
+            crate::types::MemberRole::Admin,
+        ))
         .service(register(
             "get_entity",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "entity/{id}",
             get_entity,
             crate::types::MemberRole::Public,
@@ -298,7 +334,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "submit_flow",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "flow",
             submit_flow,
             crate::types::MemberRole::Admin,
@@ -306,7 +342,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_entity_flows",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "entity/{id}/flows",
             get_entity_flows,
             crate::types::MemberRole::Public,
@@ -314,7 +350,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_ledger",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "ledger.json",
             get_ledger,
             crate::types::MemberRole::Public,
@@ -322,7 +358,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "ledger_submit_bulk_flow",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "submit/bulk",
             submit_bulk_flows,
             crate::types::MemberRole::Admin,
@@ -330,7 +366,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "submit_bulk_entities",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "submit/entities/bulk",
             submit_bulk_entities,
             crate::types::MemberRole::Admin,

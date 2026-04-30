@@ -78,6 +78,8 @@ diesel::table! {
         created_by -> Text,
         created_at -> Timestamp,
         details -> Text,
+        entity_type_id -> Nullable<Text>,
+        canonical_entity_id -> Nullable<Text>,
     }
 }
 
@@ -88,6 +90,51 @@ diesel::table! {
         alias -> Text,
         created_by -> Text,
         created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    entity_identities (id) {
+        id -> Text,
+        entity_id -> Text,
+        host_id -> Integer,
+        identity_type -> Text,
+        identity_value -> Text,
+        verified -> Bool,
+        primary_flag -> Bool,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    entity_merges (id) {
+        id -> Text,
+        from_entity -> Text,
+        to_entity -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    entity_relationships (id) {
+        id -> Text,
+        from_entity -> Text,
+        to_entity -> Text,
+        host_id -> Integer,
+        relationship_type -> Text,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    entity_types (id) {
+        id -> Text,
+        name -> Text,
+        description -> Text,
+        host_id -> Integer,
+        can_hold_resources -> Bool,
+        can_initiate_flows -> Bool,
+        can_receive_flows -> Bool,
     }
 }
 
@@ -364,6 +411,9 @@ diesel::joinable!(contribution_events -> effort_contexts (context_id));
 diesel::joinable!(contributors -> users (user_id));
 diesel::joinable!(entities -> hosts (host_id));
 diesel::joinable!(entity_aliases -> entities (entity_id));
+diesel::joinable!(entity_identities -> entities (entity_id));
+diesel::joinable!(entity_identities -> hosts (host_id));
+diesel::joinable!(entity_relationships -> hosts (host_id));
 diesel::joinable!(entity_users -> entities (entity_id));
 diesel::joinable!(entity_users -> users (user_id));
 diesel::joinable!(flow_actions -> entities (actor_entity));
@@ -392,6 +442,10 @@ diesel::allow_tables_to_appear_in_same_query!(
     effort_contexts,
     entities,
     entity_aliases,
+    entity_identities,
+    entity_merges,
+    entity_relationships,
+    entity_types,
     entity_users,
     events,
     flow_actions,

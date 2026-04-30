@@ -8,7 +8,7 @@ use crate::models::offers::{
     update_offer,
 };
 
-use crate::routes::register;
+use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
 
 use crate::app_state::AppState;
@@ -136,15 +136,14 @@ pub async fn create_contribute_event(
 }
  */
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path = parent_path.join("/");
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         // Offer API registrations
         // POST / (create offer)
         .service(register(
             "create_offer",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "",
             create_offer_api,
             crate::types::MemberRole::Member,
@@ -153,7 +152,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_offer",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "{id}",
             get_offer_api,
             crate::types::MemberRole::Public,
@@ -162,7 +161,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_offers",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "",
             get_offers_api,
             crate::types::MemberRole::Public,
@@ -171,7 +170,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "get_user_offers",
             Method::GET,
-            &full_path,
+            path.as_str(),
             "user/{input_uid}/offers",
             get_user_offers_api,
             crate::types::MemberRole::Public,
@@ -180,7 +179,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "update_offer",
             Method::PUT,
-            &full_path,
+            path.as_str(),
             "{id}",
             update_offer_api,
             crate::types::MemberRole::Member,
@@ -189,7 +188,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "delete_offer",
             Method::DELETE,
-            &full_path,
+            path.as_str(),
             "{id}",
             delete_offer_api,
             crate::types::MemberRole::Member,
@@ -198,7 +197,7 @@ pub fn scope(parent_path: Vec<&str>) -> Scope {
         .service(register(
             "create_wants_to_contribute",
             Method::POST,
-            &full_path,
+            path.as_str(),
             "wants_to_help",
             create_wants_to_contribute,
             crate::types::MemberRole::Member,

@@ -1,4 +1,4 @@
-use crate::{errors::app_error::AppError, routes::register, services::hosts::HostDomain, types::method::Method, validator::AuthContext};
+use crate::{errors::app_error::AppError, routes::{register, RoutePath}, services::hosts::HostDomain, types::method::Method, validator::AuthContext};
 use actix_web::{HttpResponse,  Scope, web};
 
 
@@ -27,19 +27,16 @@ pub async fn list_all_hosts(
         
 // }
 
-pub fn scope(parent_path: Vec<&str>) -> Scope {
-    let full_path= parent_path.join("/");
-
+pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
-        .service(register("host_list", Method::GET, &full_path ,"",list_all_hosts,crate::types::MemberRole::Public,))
+        .service(register("host_list", Method::GET, path.as_str(), "", list_all_hosts, crate::types::MemberRole::Public))
 }
 
 
 
-pub fn admin_scope(parent_path: Vec<&str>) -> Scope {
-    let full_path= parent_path.join("/");
+pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
-        .service(register("admin_host_list", Method::GET, &full_path, "list", list_all_hosts, crate::types::MemberRole::Member))
+        .service(register("admin_host_list", Method::GET, path.as_str(), "list", list_all_hosts, crate::types::MemberRole::Member))
 }
 
 
