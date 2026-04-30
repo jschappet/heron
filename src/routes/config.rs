@@ -135,10 +135,24 @@ pub async fn capabilities(user: Option<AuthContext>) -> impl Responder {
 
 
 
+async fn alpine_min() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("application/javascript")
+        .body(include_bytes!("../../alpine.min.js").as_ref())
+}
+
+async fn alpine_custom() -> impl Responder {
+    HttpResponse::Ok()
+        .content_type("application/javascript")
+        .body(include_bytes!("../../alpine_custom.js").as_ref())
+}
+
 pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register("config", Method::GET, path.as_str(), "", get_config_api, MemberRole::Public))
         .service(register("online", Method::GET, path.as_str(), "/ONLINE", online, MemberRole::Public))
         .service(register("ping", Method::GET, path.as_str(), "/ping", ping, MemberRole::Public))
         .service(register("capabilities", Method::GET, path.as_str(), "/capabilities", capabilities, MemberRole::Public))
+        .service(register("alpine.min.js", Method::GET, path.as_str(), "/alpine.min.js", alpine_min, MemberRole::Public))
+        .service(register("alpine_custom.js", Method::GET, path.as_str(), "/alpine_custom.js", alpine_custom, MemberRole::Public))
 }

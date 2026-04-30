@@ -59,7 +59,15 @@ pub struct Email {
 pub struct Twilio {
     pub account_sid: String,
     pub auth_token: String,
-    pub phone_number: String, 
+    pub phone_number: String,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+#[allow(unused)]
+pub struct SmsGate {
+    pub host: String,
+    pub username: String,
+    pub password: String,
 }
 
 
@@ -82,6 +90,7 @@ pub struct Settings {
     pub database: Database,
     pub web_config: WebConfig,
     pub twilio: Twilio,
+    pub smsgate: SmsGate,
     pub email: Email,
     pub smtp: SmtpConfig,
     pub gpt: Gpt,
