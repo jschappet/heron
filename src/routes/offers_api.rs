@@ -148,21 +148,12 @@ pub fn scope(path: &RoutePath) -> Scope {
             create_offer_api,
             crate::types::MemberRole::Member,
         ))
-        // GET /{id} (get single offer)
-        .service(register(
-            "get_offer",
-            Method::GET,
-            path.as_str(),
-            "{id}",
-            get_offer_api,
-            crate::types::MemberRole::Public,
-        ))
-        // GET / (list all offers)
+                // GET / (list all offers)
         .service(register(
             "get_offers",
             Method::GET,
             path.as_str(),
-            "",
+            "all",
             get_offers_api,
             crate::types::MemberRole::Public,
         ))
@@ -202,6 +193,16 @@ pub fn scope(path: &RoutePath) -> Scope {
             create_wants_to_contribute,
             crate::types::MemberRole::Member,
         ))
+        // GET /{id} (get single offer)
+        .service(register(
+            "get_offer",
+            Method::GET,
+            path.as_str(),
+            "{id}",
+            get_offer_api,
+            crate::types::MemberRole::Public,
+        ))
+
 }
 //  .service(create_offer_api)
 //         .service(get_offer_api)
