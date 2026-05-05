@@ -55,7 +55,9 @@ mod db;
 
 
 use env_logger::Env;
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
 mod validator;
 
 
@@ -127,7 +129,7 @@ async fn main() -> std::io::Result<()> {
         db_pool: pool.clone(),
         hb: Arc::new(handlebars),
         settings: settings.clone(),
-        
+        rate_limiter: Arc::new(Mutex::new(HashMap::new())),
     };
 
     let session_key = settings.web_config.cookie_key.clone();
