@@ -1,4 +1,6 @@
 use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
+use std::collections::HashSet;
+use std::time::Instant;
 //use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
 use chrono::{NaiveDateTime, Utc, Duration};
 use diesel::prelude::*;
@@ -57,8 +59,67 @@ pub struct NewSubscriber<'a> {
 pub struct SubscribeForm {
     pub name: String,
     pub email: String,
-    pub nickname: Option<String>, // honeypot
+    pub nickname: Option<String>,      // honeypot
+    pub company: Option<String>,       // honeypot
+    pub website: Option<String>,       // honeypot
+    pub form_started_at: Option<i64>,  // unix timestamp for timing check
     pub message: Option<String>,
+}
+
+fn normalize_email(addr: &str) -> String {
+    let lower = addr.to_lowercase();
+    if let Some((local, domain)) = lower.split_once('@') {
+        if domain == "gmail.com" {
+            return format!("{}@{}", local.replace('.', ""), domain);
+        }
+    }
+    lower
+}
+
+fn validate_submission(form: &SubscribeForm) -> Result<(), &'static str> {
+    let name_val = form.name.trim();
+    let msg = form.message.as_deref().unwrap_or("").trim();
+
+    if name_val.len() < 3 {
+        return Err("Name too short.");
+    }
+    if !name_val.chars().any(|c| "aeiouAEIOU".contains(c)) {
+        return Err("Name appears invalid.");
+    }
+
+    if !msg.is_empty() {
+        if msg.len() < 10 {
+            return Err("Message too short.");
+        }
+        if !msg.contains(' ') {
+            return Err("Message appears invalid.");
+        }
+        let unique: HashSet<char> = msg.chars().collect();
+        if msg.len() > 8 && unique.len() as f32 / msg.len() as f32 > 0.85 {
+            return Err("Message appears to be random.");
+        }
+    }
+
+    if let Some((local_part, _)) = form.email.split_once('@') {
+        if local_part.matches('.').count() > 3 {
+            return Err("Email address appears invalid.");
+        }
+    }
+
+    Ok(())
+}
+
+fn get_client_ip(req: &HttpRequest) -> String {
+    req.headers()
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| {
+            req.peer_addr()
+                .map(|a| a.ip().to_string())
+                .unwrap_or_else(|| "unknown".to_string())
+        })
 }
 
 
@@ -104,31 +165,59 @@ async fn subscribe(
     // Get host ID — always returns a valid ID now
     let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
 
-    // Honeypot check
-    if let Some(nick) = &form.nickname {
-        if !nick.is_empty() {
-            return HttpResponse::Ok().body("Bot detected.");
+    // Honeypot checks
+    let honeypot_triggered = [&form.nickname, &form.company, &form.website]
+        .iter()
+        .any(|f| f.as_deref().map(|s| !s.is_empty()).unwrap_or(false));
+    if honeypot_triggered {
+        return HttpResponse::Ok().body("Thank you for subscribing.");
+    }
+
+    // Timing check
+    if let Some(started_at) = form.form_started_at {
+        if Utc::now().timestamp() - started_at < 3 {
+            return HttpResponse::BadRequest().body("Submission too fast.");
         }
     }
+
+    // Rate limiting
+    let client_ip = get_client_ip(&req);
+    {
+        let mut limiter = data.rate_limiter.lock().unwrap();
+        if let Some(last_time) = limiter.get(&client_ip) {
+            if last_time.elapsed().as_secs() < 10 {
+                return HttpResponse::TooManyRequests().body("Too many requests. Please wait before trying again.");
+            }
+        }
+        limiter.insert(client_ip, Instant::now());
+    }
+
     // Basic validation
     if form.name.trim().is_empty() || form.email.trim().is_empty() || !form.email.contains('@') {
         return HttpResponse::BadRequest().body("Invalid input.");
     }
+
+    // Spam heuristics
+    if let Err(reason) = validate_submission(&form) {
+        return HttpResponse::BadRequest().body(reason);
+    }
+
     let secret = std::env::var("MAILING_LIST_SECRET").unwrap_or_else(|_| "changeme".to_string());
     let token = generate_token(&form.email, &secret, 60 * 24); // 24h expiry
-    
+
+    let normalized = normalize_email(&form.email);
 
     let mut conn = data.db_pool.get().expect("DB connection failed");
     let existing = mailing_list_subscribers
-        .filter(email.eq(&form.email))
+        .filter(email.eq(&normalized))
         .filter(host_id.eq(incoming_host_id))
         .select(Subscriber::as_select())
         .first::<Subscriber>(&mut conn)
         .optional()
         .expect("DB error");
-    if let Some( sub) = existing {
+    if let Some(sub) = existing {
         log::info!("Updating existing subscriber: {}", sub.email);
-        diesel::update(mailing_list_subscribers.filter(email.eq(&form.email)))
+        diesel::update(mailing_list_subscribers.filter(email.eq(&normalized)))
             .set((
                 name.eq(&form.name),
                 confirmation_token.eq(Some(token.clone())),
@@ -136,14 +225,13 @@ async fn subscribe(
                 confirmed.eq(false),
                 host_id.eq(incoming_host_id),
                 message.eq(&form.message),
-
             ))
             .execute(&mut conn)
             .expect("DB update error");
     } else {
         let new_sub = NewSubscriber {
             name: &form.name,
-            email: &form.email,
+            email: &normalized,
             confirmation_token: Some(&token),
             host_id: incoming_host_id,
             message: form.message.clone(),
