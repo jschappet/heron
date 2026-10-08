@@ -31,6 +31,8 @@ pub struct WebConfig {
     pub login_url: String, 
     pub upload_dir: String,
     pub image_site_path: String,
+    pub iot_device_token: String,
+    pub iot_storage_dir: String,
 }
 
 

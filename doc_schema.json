@@ -630,6 +630,12 @@
           "type": "date",
           "storage": "meta"
         },
+       {
+          "label": "Images",
+          "key": "images",
+          "type": "images",
+          "storage": "meta"
+        },
         {
           "label": "Body Markdown",
           "key": "body_md",

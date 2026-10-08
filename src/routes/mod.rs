@@ -11,7 +11,7 @@ pub mod ratings_api;
 pub mod config;
 
 pub mod profile;
-
+pub mod iot;
 pub mod authentication;
 
 pub mod drafts_api;
@@ -247,6 +247,7 @@ pub fn api_scope(path: &'static str) -> Scope {
         // Twilio integration example
         .service(scoped("/twilio", "twilio", Some(MemberRole::Public), twilio::scope(&RoutePath::new(&[path, "twilio"]))))
         .service(scoped("/ledger", "ledger", Some(MemberRole::Member), ledger::scope(&RoutePath::new(&[path, "ledger"]))))
+        .service(scoped("/iot", "iot", Some(MemberRole::Public), iot::scope(&RoutePath::new(&[path, "iot"]))))
         
         .service(
     web::scope("/admin")
