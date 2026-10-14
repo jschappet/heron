@@ -1,6 +1,29 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    iot_metrics (id) {
+        id -> Integer,
+        host_id -> Integer,
+        device_id -> Text,
+        report_id -> Text,
+        boot_id -> Text,
+        schema_name -> Text,
+        schema_version -> Integer,
+        observed_at_unix -> BigInt,
+        received_at_unix -> BigInt,
+        window_start_ms -> BigInt,
+        window_end_ms -> BigInt,
+        window_duration_ms -> BigInt,
+        gpio -> Integer,
+        count -> Nullable<BigInt>,
+        total_count -> Nullable<BigInt>,
+        temperature_c -> Nullable<Double>,
+        humidity_percent -> Nullable<Double>,
+        reading_json -> Text,
+    }
+}
+
+diesel::table! {
     completed_offers (id) {
         id -> Integer,
         offer_id -> Integer,
@@ -467,3 +490,14 @@ diesel::allow_tables_to_appear_in_same_query!(
     wants_to_contribute,
     weekly_answers,
 );
+
+
+diesel::table! {
+    iot_devices (host_id, device_id) {
+        host_id -> Integer,
+        device_id -> Text,
+        name -> Text,
+        sensor_url -> Text,
+        last_seen_unix -> BigInt,
+    }
+}

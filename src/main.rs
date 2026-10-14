@@ -1,11 +1,11 @@
 use actix_web::middleware::NormalizePath;
 //use actix_web::web::Payload;
-use actix_web::{App, HttpResponse, HttpServer, Responder, middleware as mw, web};
+use actix_web::{App, HttpServer, middleware as mw, web};
 //use actix_web::{App, Error, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder, get, middleware as mw, post, web};
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
 use actix_web::cookie::{ Key, SameSite};
 
-use actix_files::{self as fs};
+mod dev_sites;
 use diesel::r2d2::{ConnectionManager, Pool};
 use dotenvy;
 //mod offers;
@@ -59,21 +59,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 mod validator;
-
-
-async fn not_found() -> impl Responder {
-    let body_text = match std::fs::read_to_string("./webroot/404.html") {
-        Ok(text) => text,
-        Err(e) => "File Not Found".to_string(),
-    };
-
-    HttpResponse::NotFound()
-        .content_type("text/html")
-        .body(body_text)
-}
-
-
-
 
 
 #[actix_web::main]
@@ -157,6 +142,8 @@ async fn main() -> std::io::Result<()> {
 
 
 
+    let dev_sites = settings.active_dev_sites();
+
     HttpServer::new(move || {
 
         let key = Key::from(session_key.as_bytes());
@@ -176,7 +163,7 @@ async fn main() -> std::io::Result<()> {
 
 
         let mut app = App::new()
-            .wrap(HostMiddleware::new(app_state.db_pool.clone()))
+            .wrap(HostMiddleware::new(app_state.db_pool.clone(), dev_sites.clone()))
             .app_data(web::Data::new(ledger_domain.clone()))
             .app_data(web::Data::new(draft_domain.clone()))
             .app_data(web::Data::new(member_domain.clone()))
@@ -213,12 +200,13 @@ async fn main() -> std::io::Result<()> {
         // Conditionally include static files in development
 
         if cfg!(debug_assertions) {
-        app = app.service(
-            fs::Files::new("/", "./webroot/")
-                .index_file("index.html")
-                .default_handler(web::route().to(not_found)));
-
-            
+            for site in &dev_sites {
+                app = app.service(dev_sites::static_files(
+                    site.root.clone(), Some(site.hostname.clone()),
+                ));
+            }
+            // Preserve the existing localhost/webroot workflow.
+            app = app.service(dev_sites::static_files("./webroot".into(), None));
         }
         app
     })

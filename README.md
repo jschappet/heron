@@ -82,7 +82,12 @@ Server binds to the address specified in the configuration (default `127.0.0.1:8
 
 ### Development Mode
 
-Static files from `../dist` are served only in debug mode.
+For sensor firmware development in VS Code and IoT metric storage, see
+[the IoT guide](docs/iot.md) and open `heron-arduino.code-workspace`.
+
+In development, Heron serves all three sites using local hostnames. See
+[local multi-site development](docs/local-sites.md) for addresses and setup.
+The existing `webroot` link remains the fallback for `localhost`.
 
 ```bash
 cargo run
@@ -137,4 +142,3 @@ Project Heron is intended for co-authors who will **co-design, co-decide, and co
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
-

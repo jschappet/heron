@@ -96,11 +96,21 @@ pub struct Settings {
     pub email: Email,
     pub smtp: SmtpConfig,
     pub gpt: Gpt,
-    pub templates: String, 
+    pub templates: String,
+    #[serde(default)]
+    pub dev_sites: Vec<crate::dev_sites::DevSite>,
 }
 
 impl Settings {
     
+    pub fn active_dev_sites(&self) -> Vec<crate::dev_sites::DevSite> {
+        if cfg!(debug_assertions) && self.environment == DeployedEnvironment::Development {
+            self.dev_sites.clone()
+        } else {
+            Vec::new()
+        }
+    }
+
     pub fn get_bind(self) -> String {
         format!("{}:{}", self.web_config.host, self.web_config.port)
     } 

@@ -1,0 +1,6 @@
+{
+  "DISCOVERY_URL": "https://prod.example.com/api/iot",
+  "DEVICE_TOKEN": "replace-with-device-token",
+  "ROOT_CA_FILE": "../root-ca.local.pem",
+  "REPORT_INTERVAL_SECONDS": 300
+}

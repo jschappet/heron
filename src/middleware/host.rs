@@ -20,17 +20,19 @@ pub struct HostContext(pub Rc<HostInfo>);
 
 pub struct HostMiddleware {
     pool: DbPool,
+    dev_sites: Vec<crate::dev_sites::DevSite>,
 }
 
 impl HostMiddleware {
-    pub fn new(pool: DbPool) -> Self {
-        Self { pool }
+    pub fn new(pool: DbPool, dev_sites: Vec<crate::dev_sites::DevSite>) -> Self {
+        Self { pool, dev_sites }
     }
 }
 
 pub struct HostMiddlewareService<S> {
     inner: Rc<S>,
     pool: DbPool,
+    dev_sites: Vec<crate::dev_sites::DevSite>,
 }
 
 impl<S, B> Transform<S, ServiceRequest> for HostMiddleware
@@ -48,6 +50,7 @@ where
         ready(Ok(HostMiddlewareService {
             inner: Rc::new(service),
             pool: self.pool.clone(),
+            dev_sites: self.dev_sites.clone(),
         }))
     }
 }
@@ -83,12 +86,19 @@ where
             Err(e) => return Box::pin(async { Err(e) }),
         };
 
+        let dev_site = crate::dev_sites::find_site(&self.dev_sites, &host_header).cloned();
         Box::pin(async move {
             log::debug!("HostMiddleware: Extracted host header: {}", host_header);
             let hosts_service = HostsService::new(pool);
             let host_info = hosts_service
-                .get_host_by_name(&host_header)
+                .get_host_by_name(dev_site.as_ref().map_or(host_header.as_str(), |site| site.api_host.as_str()))
                 .map_err(actix_web::error::ErrorInternalServerError)?;
+
+            if dev_site.is_some() && host_info.id == 0 {
+                return Err(actix_web::error::ErrorServiceUnavailable(
+                    "Development site API identity is missing from the hosts table",
+                ));
+            }
 
             let host_ctx = HostContext(Rc::new(HostInfo {
                 id: host_info.id,

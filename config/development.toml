@@ -1,0 +1,15 @@
+# Paths are relative to Heron's working directory. API identities refer to hosts.host_name.
+[[dev_sites]]
+hostname = "regen.localhost"
+root = "../regen-skagit/dist"
+api_host = "regenerateskagit.org"
+
+[[dev_sites]]
+hostname = "revillage.localhost"
+root = "../revillage-society/dist"
+api_host = "revillagesociety.org"
+
+[[dev_sites]]
+hostname = "workshop.localhost"
+root = "../workshop.schappet.com/dist"
+api_host = "workshop.schappet.com"
