@@ -249,9 +249,9 @@ pub async fn post_iot(
 }
 
 pub async fn get_devices(req: HttpRequest, data: web::Data<AppState>) -> HttpResponse {
-    //if let Err(response) = authorize(&req, &data) {
-    //    return response;
-    //}
+    if let Err(response) = authorize(&req, &data) {
+        return response;
+    }
     let host = match require_host(&req).await {
         Ok(host) => host,
         Err(response) => return response,
