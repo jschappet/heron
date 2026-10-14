@@ -35,6 +35,8 @@ port="8582"
 context_path = "/"
 login_url = "/tracker/app/login"
 cookie_key = "REPLACE_ME"
+iot_device_token = "DEMODEMO"
+iot_storage_dir = "/assets/iot"
 
 
 [twilio]

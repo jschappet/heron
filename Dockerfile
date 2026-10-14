@@ -19,6 +19,9 @@ RUN rm -rf src
 
 # Now copy real source
 COPY src ./src
+COPY alpine_custom.js ./alpine_custom.js
+COPY alpine.min.js ./alpine.min.js
+
 COPY templates ./templates
 
 # Build actual binary

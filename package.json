@@ -1,4 +1,10 @@
 {
+  "name": "heron",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "flash-esp32": "utils/flash-esp32/index.js"
+  },
   "dependencies": {
     "csv-parse": "^6.1.0",
     "tough-cookie": "^6.0.1"

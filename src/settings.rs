@@ -31,6 +31,8 @@ pub struct WebConfig {
     pub login_url: String, 
     pub upload_dir: String,
     pub image_site_path: String,
+    pub iot_device_token: String,
+    pub iot_storage_dir: String,
 }
 
 
@@ -94,11 +96,21 @@ pub struct Settings {
     pub email: Email,
     pub smtp: SmtpConfig,
     pub gpt: Gpt,
-    pub templates: String, 
+    pub templates: String,
+    #[serde(default)]
+    pub dev_sites: Vec<crate::dev_sites::DevSite>,
 }
 
 impl Settings {
     
+    pub fn active_dev_sites(&self) -> Vec<crate::dev_sites::DevSite> {
+        if cfg!(debug_assertions) && self.environment == DeployedEnvironment::Development {
+            self.dev_sites.clone()
+        } else {
+            Vec::new()
+        }
+    }
+
     pub fn get_bind(self) -> String {
         format!("{}:{}", self.web_config.host, self.web_config.port)
     } 

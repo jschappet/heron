@@ -1,0 +1,6 @@
+{
+  "DISCOVERY_URL": "https://your-host.example/api/iot",
+  "SENSOR_TYPE": "touch_count",
+  "ROOT_CA_FILE": "root-ca.local.pem",
+  "DEVICE_TOKEN": "replace-with-your-iot-device-token"
+}

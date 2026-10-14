@@ -1,0 +1,130 @@
+{
+  "folders": [
+    {
+      "name": "Heron",
+      "path": "."
+    },
+    {
+      "name": "Touch counter",
+      "path": "firmware/esp32_sensor"
+    },
+    {
+      "name": "Temperature sensor",
+      "path": "firmware/esp32_temperature"
+    }
+  ],
+  "settings": {
+    "files.associations": {
+      "*.ino": "cpp"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "rust-lang.rust-analyzer",
+      "ms-vscode.cpptools"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Arduino: List boards",
+        "type": "process",
+        "command": "/Applications/Arduino IDE.app/Contents/Resources/app/lib/backend/resources/arduino-cli",
+        "args": [
+          "board",
+          "list"
+        ],
+        "problemMatcher": []
+      },
+      {
+        "label": "Arduino: Compile",
+        "type": "process",
+        "command": "node",
+        "args": [
+          "${workspaceFolder:Heron}/utils/flash-esp32",
+          "--sensor",
+          "${input:sensor}",
+          "--env",
+          "${input:environment}",
+          "--compile-only"
+        ],
+        "problemMatcher": [],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "options": {
+          "env": {
+            "ARDUINO_FQBN": "${input:fqbn}"
+          }
+        }
+      },
+      {
+        "label": "Arduino: Upload (compiles first)",
+        "type": "process",
+        "command": "node",
+        "args": [
+          "${workspaceFolder:Heron}/utils/flash-esp32",
+          "--sensor",
+          "${input:sensor}",
+          "--env",
+          "${input:environment}",
+          "${input:port}"
+        ],
+        "problemMatcher": [],
+        "options": {
+          "env": {
+            "ARDUINO_FQBN": "${input:fqbn}"
+          }
+        }
+      },
+      {
+        "label": "Arduino: Serial monitor",
+        "type": "process",
+        "command": "/Applications/Arduino IDE.app/Contents/Resources/app/lib/backend/resources/arduino-cli",
+        "args": [
+          "monitor",
+          "--port",
+          "${input:port}",
+          "--config",
+          "baudrate=115200"
+        ],
+        "problemMatcher": []
+      }
+    ],
+    "inputs": [
+      {
+        "id": "fqbn",
+        "type": "promptString",
+        "description": "Board identifier (match Arduino IDE board selection)",
+        "default": "esp32:esp32:esp32"
+      },
+      {
+        "id": "port",
+        "type": "promptString",
+        "description": "Serial port from Arduino: List boards"
+      },
+      {
+        "id": "sensor",
+        "type": "pickString",
+        "description": "Sensor firmware",
+        "options": [
+          "touch",
+          "temperature"
+        ],
+        "default": "touch"
+      },
+      {
+        "id": "environment",
+        "type": "pickString",
+        "description": "Configuration environment",
+        "options": [
+          "DEV",
+          "PROD"
+        ],
+        "default": "DEV"
+      }
+    ]
+  }
+}

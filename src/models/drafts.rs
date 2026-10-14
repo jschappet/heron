@@ -159,6 +159,9 @@ pub fn get_drafts_filtered(
         log::info!("Date To: {}", date);
         q = q.filter(drafts::submitted_at.le(end));
     }
+    // Add Order By clause to sort by submitted_at in descending order
+    q = q.order(drafts::submitted_at.desc());
+    
 
     q.load(conn)
 }

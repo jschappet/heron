@@ -6,3 +6,9 @@ target/
 .env
 node_modules/*
 db_backup.db
+# Local firmware credentials and generated configuration
+firmware/config.local.json
+firmware/*.local.pem
+firmware/**/device_config.h
+firmware/config/*.json
+!firmware/config/*.example.json
