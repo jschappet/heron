@@ -150,6 +150,13 @@ pub fn require_role_for_host(
     host_id: i32,
     required_roles: &[MemberRole],
 ) -> Result<(), AuthError> {
+    log::debug!(
+        "Checking roles for user {} on host {}: {:?} against required {:?}",
+        context.user_id,
+        host_id,
+        context.memberships,
+        required_roles
+    );
     let has_required_role = context.memberships.iter().any(|membership| {
         membership.host_id == host_id && required_roles.contains(&membership.role)
     });

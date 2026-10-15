@@ -163,7 +163,11 @@ async fn subscribe(
 ) -> impl Responder {
 
     // Get host ID — always returns a valid ID now
-    let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
+    let incoming_host_id = match require_host_id(&req).await {
+        Ok(value) if value > 0 => value,
+        Ok(_) => return HttpResponse::BadRequest().body("Unknown site."),
+        Err(response) => return response,
+    };
 
     // Honeypot checks
     let honeypot_triggered = [&form.nickname, &form.company, &form.website]
@@ -208,38 +212,43 @@ async fn subscribe(
     let normalized = normalize_email(&form.email);
 
     let mut conn = data.db_pool.get().expect("DB connection failed");
-    let existing = mailing_list_subscribers
-        .filter(email.eq(&normalized))
-        .filter(host_id.eq(incoming_host_id))
-        .select(Subscriber::as_select())
-        .first::<Subscriber>(&mut conn)
-        .optional()
-        .expect("DB error");
-    if let Some(sub) = existing {
-        log::info!("Updating existing subscriber: {}", sub.email);
-        diesel::update(mailing_list_subscribers.filter(email.eq(&normalized)))
-            .set((
-                name.eq(&form.name),
-                confirmation_token.eq(Some(token.clone())),
-                unsubscribed.eq(false),
-                confirmed.eq(false),
-                host_id.eq(incoming_host_id),
-                message.eq(&form.message),
-            ))
-            .execute(&mut conn)
-            .expect("DB update error");
-    } else {
-        let new_sub = NewSubscriber {
-            name: &form.name,
-            email: &normalized,
-            confirmation_token: Some(&token),
-            host_id: incoming_host_id,
-            message: form.message.clone(),
-        };
-        diesel::insert_into(mailing_list_subscribers)
-            .values(&new_sub)
-            .execute(&mut conn)
-            .expect("DB insert error");
+    let saved = conn.transaction::<(), diesel::result::Error, _>(|conn| {
+        let existing = mailing_list_subscribers
+            .filter(email.eq(&normalized))
+            .filter(host_id.eq(incoming_host_id))
+            .select(Subscriber::as_select())
+            .first::<Subscriber>(conn)
+            .optional()?;
+        if let Some(sub) = existing {
+            log::info!("Updating existing subscriber: {}", sub.email);
+            diesel::update(mailing_list_subscribers.filter(email.eq(&normalized)).filter(host_id.eq(incoming_host_id)))
+                .set((
+                    name.eq(&form.name),
+                    confirmation_token.eq(Some(token.clone())),
+                    unsubscribed.eq(false),
+                    confirmed.eq(false),
+                    host_id.eq(incoming_host_id),
+                    message.eq(&form.message),
+                ))
+                .execute(conn)?;
+        } else {
+            let new_sub = NewSubscriber {
+                name: &form.name,
+                email: &normalized,
+                confirmation_token: Some(&token),
+                host_id: incoming_host_id,
+                message: form.message.clone(),
+            };
+            diesel::insert_into(mailing_list_subscribers)
+                .values(&new_sub)
+                .execute(conn)?;
+        }
+        crate::services::contact_messages::record(conn, incoming_host_id, &form.name, &normalized, form.message.as_deref())?;
+        Ok(())
+    });
+    if let Err(error) = saved {
+        log::error!("Contact submission could not be saved: {error}");
+        return HttpResponse::InternalServerError().body("Your message could not be saved. Please try again.");
     }
     // TODO: Send confirmation email with link: /confirm/<token>
     // send_confirmation_email(&form.email, &token);

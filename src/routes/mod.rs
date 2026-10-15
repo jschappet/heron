@@ -1,3 +1,4 @@
+pub mod contact_messages;
 pub mod offers_api;
 
 pub mod users_api;
@@ -263,6 +264,7 @@ pub fn api_scope(path: &'static str) -> Scope {
 pub fn admin_scope() -> Scope {    
     let path= "/api/admin";
     web::scope("")
+        .service(scoped("/messages", "messages", Some(MemberRole::Admin), contact_messages::scope(&RoutePath::new(&[path, "messages"]))))
         .service(scoped("/events", "events", Some(MemberRole::Member), events_api::admin_scope(&RoutePath::new(&[path, "events"]))))
         .service(scoped("/contrib_context", "contrib", None, contribution_event::admin_scope(&RoutePath::new(&[path, "contrib"]))))
         .service(scoped("/drafts", "drafts", None, drafts_api::admin_scope(&RoutePath::new(&[path, "drafts"]))))
