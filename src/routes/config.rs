@@ -107,13 +107,16 @@ pub struct Capability {
 }
 
 
-pub async fn capabilities(user: Option<AuthContext>) -> impl Responder {
+pub async fn capabilities(user: Option<AuthContext>, host: HostContext) -> impl Responder {
     
-    let roles = match user {
-        Some(ref ctx) => ctx.get_roles(),
+    let mut roles = match user {
+        Some(ref ctx) => ctx.memberships.iter().filter(|m| m.host_id == host.0.id).map(|m| m.role).collect::<Vec<_>>(),
         None => vec![MemberRole::Public],
     };
 
+    // Content permissions include reviewer/admin access without requiring duplicate memberships.
+    if roles.contains(&MemberRole::Admin) { roles.push(MemberRole::Reviewer); }
+    if roles.contains(&MemberRole::Reviewer) { roles.push(MemberRole::Member); }
     let routes = {
         let guard = routes().lock().unwrap();
 

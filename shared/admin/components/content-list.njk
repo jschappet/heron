@@ -1,0 +1,59 @@
+<script src="/assets/js/content-access.js"></script>
+<script>window.contentEditorRoutes = {{ contentManagement.editors | dump | safe }};</script>
+<script src="/assets/js/content-management.js"></script>
+<section x-data="contentWorkspace({% if personalContent %}true{% else %}false{% endif %})" x-show="signedIn || error" x-cloak class="heron-content max-w-7xl mx-auto py-6 space-y-6" data-pagefind-ignore="all">
+  {% include "components/content-nav.njk" %}
+  <h1 class="text-3xl font-bold">{% if personalContent %}My Content{% else %}Manage Content{% endif %}</h1>
+  <p>{% if personalContent %}Create something new, resume a draft, or check your submissions.{% else %}Review submissions and manage this site's content.{% endif %} Approved content appears publicly after the site is built and deployed.</p>
+  <p x-show="loading" role="status">Loading content…</p>
+  <p x-show="error" x-text="error" class="alert alert-error" role="alert"></p>
+  <details class="rounded border p-4" open>
+    <summary class="font-bold cursor-pointer">Create new content</summary>
+    <div class="flex flex-wrap gap-3 mt-4"><template x-for="type in types" :key="type.value"><a :href="editorUrl(type.value)" class="btn btn-primary" x-text="type.label"></a></template></div>
+  </details>
+  <div class="flex flex-col sm:flex-row gap-3">
+    <label class="flex-1">Search <input type="search" class="input input-bordered w-full" x-model.debounce.200ms="filters.search" placeholder="Search titles and descriptions"></label>
+    <button class="btn self-end lg:hidden" @click="filtersOpen = !filtersOpen" :aria-expanded="filtersOpen" aria-controls="content-filters">Filters</button>
+  </div>
+  <div class="flex flex-col lg:flex-row gap-6">
+    <aside id="content-filters" class="w-full lg:w-60 lg:shrink-0 space-y-4" :class="filtersOpen ? '' : 'hidden lg:block'">
+      <label class="block">Content type<select class="select select-bordered w-full" x-model="filters.docType"><option value="">All types</option><template x-for="type in types" :key="type.value"><option :value="type.value" x-text="type.label"></option></template></select></label>
+      <label class="block">Status<select class="select select-bordered w-full" x-model="filters.status"><option value="">All statuses</option><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="changes_requested">Changes requested</option><option value="approved">Approved</option><option value="deployed">Deployed</option></select></label>
+      {% if not personalContent %}<label class="block">Author<input class="input input-bordered w-full" x-model="filters.author"></label>{% endif %}
+      <label class="block">Submitted from<input type="date" class="input input-bordered w-full" x-model="filters.dateFrom"></label>
+      <label class="block">Submitted through<input type="date" class="input input-bordered w-full" x-model="filters.dateTo"></label>
+      <label class="block">Sort<select class="select select-bordered w-full" x-model="filters.sort"><option value="recent">Newest first</option><option value="drafts">Drafts first</option><option value="title">Title</option><option value="doc_type">Content type</option><option value="author">Author</option><option value="status">Status</option><option value="submitted_at">Submission date</option></select></label>
+    </aside>
+    <div class="min-w-0 flex-1 space-y-4">
+      {% if not personalContent %}<div x-show="selected.length && $store.auth.hasRole('admin')" class="flex flex-wrap gap-3"><span x-text="selected.length + ' selected'"></span><button class="btn btn-sm" :disabled="busy" @click="bulk('approve')">Approve selected</button><button class="btn btn-sm btn-error" :disabled="busy" @click="bulk('delete')">Delete selected</button></div>{% endif %}
+      <p x-show="!loading && !filtered.length">No content matches these filters.</p>
+      {% if not personalContent %}<div class="hidden lg:flex gap-2"><button class="btn btn-sm" @click="view = 'list'" :aria-pressed="view === 'list'">Cards</button><button class="btn btn-sm" @click="view = 'table'" :aria-pressed="view === 'table'">Table</button></div>{% endif %}
+      <div class="grid gap-4" :class="!personal && view === 'table' ? 'lg:hidden' : ''">
+        <template x-for="draft in visible" :key="draft.id">
+          <article class="border rounded-lg p-4 space-y-3">
+            <div class="flex items-start gap-3">
+              {% if not personalContent %}<input x-show="$store.auth.hasRole('admin')" type="checkbox" class="checkbox" :value="draft.id" x-model="selected" :aria-label="'Select ' + draft.title">{% endif %}
+              <h2 class="text-xl font-semibold break-words min-w-0"><a class="link" :href="editorUrl(draft.doc_type, draft.id)" x-text="draft.title || '(Untitled draft)'"></a></h2>
+            </div>
+            <div class="flex flex-wrap gap-3 text-sm"><span x-text="draft.doc_type"></span><span x-text="draft.author || 'No author listed'"></span><span class="badge badge-outline" x-text="draft.status.replaceAll('_', ' ')"></span><time x-text="draft.submitted_at ? new Date(draft.submitted_at).toLocaleDateString() : ''"></time></div>
+            <div class="flex flex-wrap gap-3"><a class="btn btn-sm" :href="editorUrl(draft.doc_type, draft.id)" x-text="['draft', 'changes_requested'].includes(draft.status) ? 'Resume editing' : 'View content'"></a>
+              {% if not personalContent %}<button x-show="draft.status === 'submitted' && ($store.auth.hasRole('admin') || $store.auth.hasRole('reviewer'))" class="btn btn-sm btn-success" :disabled="busy" @click="approve(draft)">Approve</button>{% endif %}
+            </div>
+          </article>
+        </template>
+      </div>
+      {% if not personalContent %}
+      <div class="hidden overflow-x-auto" :class="view === 'table' ? 'lg:block' : ''">
+        <table class="table w-full"><thead><tr><th>Select</th><th>Title</th><th>Type</th><th>Author</th><th>Status</th><th>Review</th></tr></thead>
+          <tbody><template x-for="draft in visible" :key="draft.id"><tr>
+            <td><input x-show="$store.auth.hasRole('admin')" type="checkbox" class="checkbox" :value="draft.id" x-model="selected" :aria-label="'Select ' + draft.title"></td>
+            <td><a class="link" :href="editorUrl(draft.doc_type, draft.id)" x-text="draft.title || '(Untitled draft)'"></a></td><td x-text="draft.doc_type"></td><td x-text="draft.author"></td><td x-text="draft.status.replaceAll('_', ' ')"></td>
+            <td><button x-show="draft.status === 'submitted' && ($store.auth.hasRole('admin') || $store.auth.hasRole('reviewer'))" class="btn btn-sm" :disabled="busy" @click="approve(draft)">Approve</button></td>
+          </tr></template></tbody>
+        </table>
+      </div>
+      {% endif %}
+      <nav class="flex flex-wrap items-center gap-4" aria-label="Content pages"><button class="btn btn-sm" :disabled="page <= 1" @click="page--">Previous</button><span x-text="'Page ' + page + ' of ' + pages"></span><button class="btn btn-sm" :disabled="page >= pages" @click="page++">Next</button></nav>
+    </div>
+  </div>
+</section>

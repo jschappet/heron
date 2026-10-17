@@ -1,0 +1,11 @@
+<style>
+.heron-content { --color-primary: #166534; --color-primary-content: #fff; }
+.heron-content .btn-primary { background: #166534; border-color: #166534; color: #fff; }
+.heron-content input, .heron-content select, .heron-content textarea { max-width: 100%; }
+@media (max-width: 640px) { .heron-content .btn { min-height: 44px; } }
+</style>
+<nav class="flex flex-wrap gap-4 mb-6" aria-label="Content tools" x-data>
+  <a class="link" href="/my/content/">My Content</a>
+  <a class="link" href="/admin/content/" x-show="$store.auth.hasRole('admin') || $store.auth.hasRole('reviewer')">Manage Content</a>
+  <a class="link" href="/admin/roles/" x-show="$store.auth.hasRole('admin')">Manage Roles</a>
+</nav>

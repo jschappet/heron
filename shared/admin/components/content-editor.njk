@@ -1,0 +1,354 @@
+<script src="/assets/js/content-access.js"></script>
+<script src="/assets/js/content-editor.js"></script>
+<form
+  x-data="documentForm()"
+  x-show="signedIn || error" x-cloak
+  @submit.prevent="submit"
+  class="heron-content max-w-6xl mx-auto bg-base-100 p-4 sm:p-8 rounded-lg shadow space-y-6"
+>
+
+    {% include "components/content-nav.njk" %}
+    <a class="link" :href="returnUrl">← Back to content</a>
+    <p x-show="loading" role="status">Loading editor…</p>
+    <p x-show="!loading && !canEdit">This content is <span x-text="doc.status"></span>. Submitted content is awaiting review; approved content is published with the next site build.</p>
+    <fieldset :disabled="loading || busy || !canEdit" class="space-y-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-semibold">
+            <span x-text="doc?.title || schema?.label || 'Document'"></span>
+            (<span x-text="id || 'new'"></span>)
+        </h1>
+
+        <span class="badge badge-outline" x-text="doc_type"></span>
+    </div>
+
+    <!-- Errors -->
+    <div x-show="error" class="alert alert-error">
+        <span x-text="error"></span>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- LEFT: Details -->
+        <div class="space-y-4 lg:sticky lg:top-6 self-start">
+
+            <template x-if="schema && Array.isArray(schema.fields)">
+                <template x-for="field in schema.fields" :key="field.key">
+                    <template x-if="field.key !== 'body_md'">
+                        <div>
+                            <label class="label" :for="'content-' + field.key">
+                                <span x-text="field.label"></span>
+                                <span x-show="field.required" class="text-red-500">*</span>
+                            </label>
+
+                            <!-- Text -->
+                            <template x-if="field.type === 'text'">
+                                <input
+                  type="text"
+                  class="input input-bordered w-full"
+                  x-model="doc[field.key]" :id="'content-' + field.key" :readonly="field.readonly === true"
+                  :required="field.required === true"
+/>
+                            </template>
+                            <!-- Text -->
+                            <template x-if="field.type === 'number'">
+                                <input
+                  type="number"
+                  class="input input-bordered w-full"
+                  x-model.number="doc[field.key]" :id="'content-' + field.key"
+                  :required="field.required === true"
+/>
+                            </template>
+
+                            <!-- Textarea -->
+                            <template x-if="field.type === 'textarea'">
+                                <textarea
+                  class="textarea textarea-bordered w-full"
+                  rows="3"
+                  x-model="doc[field.key]" :id="'content-' + field.key" :readonly="field.readonly === true"
+                  :required="field.required === true"
+                ></textarea>
+                            </template>
+                            <!-- Checkboxes -->
+                            <template x-if="field.type === 'checkbox'">
+                                <div class="space-y-2">
+                                    <template x-for="opt in field.options" :key="opt.label">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input
+          type="checkbox"
+          class="checkbox"
+          :checked="doc[field.key] && doc[field.key].includes(opt.value)"
+          @change="handleCheckboxChange(field.key, opt.value, $event.target.checked)"
+/>
+                                            <span x-text="opt.label"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Hidden -->
+                            <template x-if="field.type === 'hidden'">
+                                <input type="hidden" x-model="doc[field.key]" :id="'content-' + field.key" :readonly="field.readonly === true"/>
+                            </template>
+
+                            <!-- Date -->
+                            <template x-if="field.type === 'date'">
+                                <input type="date" x-model="doc[field.key]" :id="'content-' + field.key" :readonly="field.readonly === true"/>
+                            </template>
+
+                            <!-- Images -->
+<!-- Images -->
+<template x-if="field.type === 'images'">
+    <div class="space-y-3" x-data="{ editingImageIndex: null }">
+        <div class="flex items-center justify-between">
+            <p class="text-sm text-base-content/60">
+                <span x-text="doc[field.key]?.length || 0"></span> image(s)
+            </p>
+            <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                @click="editingImageIndex = null; $refs.imageModal.showModal()"
+            >
+                Manage images
+            </button>
+        </div>
+
+        <template x-if="!doc[field.key]?.length">
+            <p class="rounded-lg border border-dashed border-base-300 p-4 text-sm text-base-content/60">
+                No images uploaded yet.
+            </p>
+        </template>
+
+        <div class="divide-y divide-base-300 overflow-hidden rounded-lg border border-base-300">
+            <template x-for="(image, index) in (doc[field.key] || [])" :key="image.url">
+                <div class="flex items-center gap-3 p-2">
+                    <img
+                        :src="image.url"
+                        :alt="image.alt || image.name"
+                        class="h-10 w-10 shrink-0 rounded object-cover"
+                    >
+
+                    <button
+                        type="button"
+                        class="min-w-0 flex-1 truncate text-left text-sm hover:text-primary"
+                        :title="image.name || image.alt || 'Untitled image'"
+                        @click="editingImageIndex = index; $refs.imageModal.showModal()"
+                        x-text="image.name || image.alt || `Image ${index + 1}`"
+                    ></button>
+
+                    <button
+                        type="button"
+                        class="btn btn-xs"
+                        title="Copy Markdown"
+                        @click="copyMarkdownImage(image)"
+                    >
+                        Copy MD
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <dialog x-ref="imageModal"
+    class="modal modal-middle fixed inset-0 z-50 m-auto h-fit 
+        max-h-[calc(100vh-2rem)] w-full max-w-2xl p-0">
+            <div class="modal-box max-w-2xl">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-lg font-bold">
+                        <span x-show="editingImageIndex === null">Manage images</span>
+                        <span x-show="editingImageIndex !== null">Edit image</span>
+                    </h3>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-circle btn-ghost"
+                        @click="$refs.imageModal.close()"
+                    >✕</button>
+                </div>
+
+                <div
+                    class="rounded-lg border-2 border-dashed border-base-300 p-4 text-center"
+                    :class="isDraggingFiles ? 'border-primary bg-primary/5' : ''"
+                    @dragover.prevent="isDraggingFiles = true"
+                    @dragleave.prevent="isDraggingFiles = false"
+                    @drop.prevent="uploadImages($event.dataTransfer.files, field.key)"
+                >
+                    <p class="text-sm">Drop images here, or choose files</p>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        class="file-input file-input-bordered file-input-sm mt-3 w-full"
+                        @change="uploadImages($event.target.files, field.key); $event.target.value = ''"
+                    >
+                    <p x-show="uploadingImages" class="mt-2 text-sm text-primary">
+                        Uploading images…
+                    </p>
+                </div>
+
+                <template x-if="editingImageIndex !== null && doc[field.key]?.[editingImageIndex]">
+                    <div class="mt-5 space-y-4">
+                        <img
+                            :src="doc[field.key][editingImageIndex].url"
+                            :alt="doc[field.key][editingImageIndex].alt"
+                            class="h-36 w-full rounded-lg object-cover"
+                        >
+
+                        <label class="form-control">
+                            <span class="label-text mb-1">Image title</span>
+                            <input
+                                class="input input-bordered w-full"
+                                type="text"
+                                placeholder="Name"
+                                x-model="doc[field.key][editingImageIndex].name"
+                            >
+                        </label>
+
+                        <label class="form-control">
+                            <span class="label-text mb-1">Alt text</span>
+                            <input
+                                class="input input-bordered w-full"
+                                type="text"
+                                placeholder="Describe the image"
+                                x-model="doc[field.key][editingImageIndex].alt"
+                            >
+                        </label>
+
+                        <label class="form-control">
+                            <span class="label-text mb-1">Image URL</span>
+                            <input
+                                class="input input-bordered w-full font-mono text-xs"
+                                type="url"
+                                placeholder="Image URL"
+                                x-model="doc[field.key][editingImageIndex].url"
+                            >
+                        </label>
+
+                        <div class="flex justify-between gap-2">
+                            <button
+                                type="button"
+                                class="btn btn-sm"
+                                @click="copyMarkdownImage(doc[field.key][editingImageIndex])"
+                            >
+                                Copy Markdown
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-error"
+                                @click="
+                                    doc[field.key].splice(editingImageIndex, 1);
+                                    editingImageIndex = null;
+                                    $refs.imageModal.close();
+                                "
+                            >
+                                Delete image
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="editingImageIndex === null">
+                    <p class="mt-4 text-sm text-base-content/60">
+                        Upload an image above, then select it from the list to edit its details.
+                    </p>
+                </template>
+            </div>
+
+            <form method="dialog" class="modal-backdrop">
+                <button>Close</button>
+            </form>
+        </dialog>
+    </div>
+</template>
+                            <!-- Tags -->
+                            <template x-if="field.type === 'tags'">
+                                <input
+                  type="text"
+                  class="input input-bordered w-full"
+                  placeholder="comma separated"
+                  x-model="doc[field.key]" :id="'content-' + field.key" :readonly="field.readonly === true"
+/>
+                            </template>
+
+                            <!-- Select -->
+                            <template x-if="field.type === 'select'">
+                                <select
+                  class="select select-bordered w-full"
+                  :required="field.required === true"
+                  x-model="doc[field.key]" :id="'content-' + field.key" :readonly="field.readonly === true"
+                >
+                                    <option value="">Select…</option>
+                                    <template x-for="opt in field.options" :key="opt.label">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                            </template>
+
+                            <!-- Multi Select -->
+                            <template x-if="field.type === 'multiselect'">
+                                <select
+        class="select select-bordered w-full"
+        :required="field.required === true"
+        x-model="doc[field.key]" :id="'content-' + field.key" :readonly="field.readonly === true"
+        multiple
+    >
+                                    <template x-for="opt in field.options" :key="opt.value">
+                                        <option :value="opt.value" x-text="opt.label"></option>
+                                    </template>
+                                </select>
+                            </template>
+                        </div>
+                    </template>
+                </template>
+            </template>
+
+        </div>
+
+        <!-- RIGHT: Markdown -->
+        <div class="lg:col-span-2 space-y-4">
+
+            <template x-if="schema?.has_markdown">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="font-semibold">Content</h2>
+                        <button
+              type="button"
+              class="btn btn-sm btn-outline"
+              @click="preview = !preview"
+            >
+                            <span x-text="preview ? 'Edit' : 'Preview'"></span>
+                        </button>
+                    </div>
+
+                    <textarea
+            x-show="!preview"
+            x-model="doc.body_md" aria-label="Content" :required="schema.fields.some(f => f.key === 'body_md' && f.required === true)"
+            rows="20"
+            class="textarea textarea-bordered w-full font-mono"
+            @dragover.prevent
+            @drop.prevent="handleMarkdownDrop($event)"
+          ></textarea>
+
+                    <div
+            x-show="preview"
+            class="prose max-w-none border border-base-300 rounded p-4"
+            x-html="renderedMarkdown"
+          ></div>
+                </div>
+            </template>
+
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 sticky bottom-0 bg-base-100 py-4">
+      <button type="button" class="btn btn-outline" :disabled="uploadingImages" @click="save()">Save Draft</button>
+      <button type="submit" class="btn btn-primary" :disabled="uploadingImages" x-show="!doc.status || ['draft', 'changes_requested'].includes(doc.status)">Submit for Review</button>
+    </div>
+    </fieldset>
+    <div x-show="!loading && !canEdit" class="prose max-w-none" x-html="renderedMarkdown"></div>
+    <!-- Status -->
+    <div x-show="ui_message" class="alert alert-info">
+        <span x-text="ui_message"></span>
+    </div>
+
+</form>

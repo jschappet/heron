@@ -4,11 +4,11 @@ use crate::domains::ledger_domain::LedgerDomain;
 use crate::errors::app_error::AppError;
 use crate::errors::auth_error::AuthError;
 use crate::middleware::host::{HostContext};
-use crate::middleware::host_utils::require_host_id;
 use crate::models::drafts::*;
 use crate::types::{DocType, DraftStatus, FrontendSchema, JsonField, MemberRole, load_frontend_schema};
 use crate::validator::{AuthContext, require_role_for_host};
-use actix_web::{HttpRequest, HttpResponse, Responder, Scope, web};
+use actix_web::{HttpResponse, Scope, web};
+use diesel::Connection;
 
 use crate::routes::{register, RoutePath};
 use crate::types::method::Method;
@@ -29,31 +29,65 @@ static FRONTEND_SCHEMA: Lazy<Arc<FrontendSchema>> = Lazy::new(|| {
     }
 });
 
-//#[get("/doc_schema")]
-async fn get_doc_schema() -> Result<HttpResponse, AppError> {
+fn contributor(auth: &AuthContext, host_id: i32) -> Result<(), AuthError> {
+    require_role_for_host(auth, host_id, &[MemberRole::Member, MemberRole::Reviewer, MemberRole::Admin])
+}
+
+fn review_access(auth: &AuthContext, host_id: i32) -> Result<(), AuthError> {
+    require_role_for_host(auth, host_id, &[MemberRole::Reviewer, MemberRole::Admin])
+}
+
+fn check_draft(draft: &Draft, auth: &AuthContext, host_id: i32, editing: bool) -> Result<(), AppError> {
+    contributor(auth, host_id)?;
+    if draft.host_id != host_id || draft.status == "deleted" {
+        return Err(AppError::NotFound("Content not found".into()));
+    }
+    let privileged = review_access(auth, host_id).is_ok();
+    if draft.submitted_by != auth.user_id && !privileged {
+        return Err(AuthError::Forbidden("This content belongs to another contributor").into());
+    }
+    if editing && !privileged && !matches!(draft.status.as_str(), "draft" | "changes_requested") {
+        return Err(AuthError::Forbidden("Only drafts and changes requested can be edited").into());
+    }
+    Ok(())
+}
+
+fn checked_draft(conn: &mut diesel::SqliteConnection, id: i32, auth: &AuthContext, host_id: i32, editing: bool) -> Result<Draft, AppError> {
+    let draft = get_draft(conn, id)?;
+    check_draft(&draft, auth, host_id, editing)?;
+    Ok(draft)
+}
+
+// Workflow and ownership fields are always server controlled.
+fn clean_payload(new: &mut NewDraft, owner: i32, host_id: i32, status: &str) -> Result<(), AppError> {
+    let kind: DocType = serde_json::from_value(serde_json::json!(new.doc_type))
+        .map_err(|_| AppError::BadRequest("Unknown content type".into()))?;
+    if !FRONTEND_SCHEMA.types.contains_key(&kind) {
+        return Err(AppError::BadRequest("Content type is not configured".into()));
+    }
+    new.submitted_by = Some(owner);
+    new.host_id = host_id;
+    new.status = Some(status.into());
+    new.submitted_at = None;
+    new.reviewed_by = None;
+    new.reviewed_at = None;
+    new.review_notes = None;
+    Ok(())
+}
+
+async fn get_doc_schema(auth: AuthContext, host: HostContext) -> Result<HttpResponse, AppError> {
+    contributor(&auth, host.0.id)?;
     Ok(HttpResponse::Ok().json(&*FRONTEND_SCHEMA))
 }
 
-// Create or save draft
-//#[post("")]
 pub async fn create_draft_api(
-    //_data: web::Data<AppState>,
-    new: web::Json<NewDraft>,
-    auth_context: AuthContext,
-    host: HostContext,
-    //domain: web::Data<LedgerDomain>,
+    new: web::Json<NewDraft>, auth_context: AuthContext, host: HostContext,
     domain: web::Data<DraftDomain>,
-) -> impl Responder {
-    //let mut conn = data.db_pool.get().unwrap();
+) -> Result<HttpResponse, AppError> {
+    contributor(&auth_context, host.0.id)?;
     let mut new = new.into_inner();
-    new.submitted_by = Some(auth_context.user_id);
-    new.host_id = host.0.id;
-    
-    match domain.create_draft(&new) {
-        Ok(draft) => HttpResponse::Ok().json(draft),
-        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
-        
-    }
+    clean_payload(&mut new, auth_context.user_id, host.0.id, "draft")?;
+    Ok(HttpResponse::Ok().json(domain.create_draft(&new)?))
 }
 
 use serde::Deserializer;
@@ -83,6 +117,8 @@ pub struct DraftQuery {
     pub dateTo: Option<String>,
     #[serde(default)]
     pub host_id: i32,
+    #[serde(default)]
+    pub mine: bool,
 }
 
 use serde::Serialize;
@@ -112,6 +148,7 @@ pub async fn get_drafts_api(
 
     let mut conn = data.db_pool.get().unwrap();
     let host_id = host.0.id;
+    contributor(&admin_context, host_id)?;
     let mut query = query.0;
     query.host_id = host_id;
 
@@ -123,7 +160,7 @@ pub async fn get_drafts_api(
     });
 
     // Only filter by user if not privileged
-    let user_filter = if is_privileged {
+    let user_filter = if is_privileged && !query.mine {
         None
     } else {
         Some(admin_context.user_id)
@@ -153,36 +190,24 @@ pub async fn get_drafts_api(
 
 // Get single draft
 //#[get("/{id}")]
-pub async fn get_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
-    let mut conn = data.db_pool.get().unwrap();
-    match get_draft(&mut conn, id.into_inner()) {
-        Ok(draft) => HttpResponse::Ok().json(draft),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+pub async fn get_draft_api(data: web::Data<AppState>, id: web::Path<i32>, auth: AuthContext, host: HostContext) -> Result<HttpResponse, AppError> {
+    let mut conn = data.db_conn()?;
+    Ok(HttpResponse::Ok().json(checked_draft(&mut conn, *id, &auth, host.0.id, false)?))
 }
 
-// Update draft
-//#[post("/{id}")]
-pub async fn update_draft_api(
-    data: web::Data<AppState>,
-    id: web::Path<i32>,
-    auth_context: AuthContext,
-    updated: web::Json<NewDraft>,
-    host: HostContext,
-
-) -> impl Responder {
-    log::debug!("Updating Draft");
-    let mut conn = data.db_pool.get().unwrap();
+pub async fn update_draft_api(data: web::Data<AppState>, id: web::Path<i32>, auth_context: AuthContext,
+    updated: web::Json<NewDraft>, host: HostContext) -> Result<HttpResponse, AppError> {
+    let mut conn = data.db_conn()?;
     let mut updated = updated.into_inner();
-    updated.submitted_by = Some(auth_context.user_id);
-    updated.host_id = host.0.id;
-
-    log::info!("Updating draft ID: {} {}", id, updated.title);
-
-    match update_draft(&mut conn, id.into_inner(), &updated) {
-        Ok(draft) => HttpResponse::Ok().json(draft),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+    let saved = conn.immediate_transaction::<_, AppError, _>(|conn| {
+        let draft = checked_draft(conn, *id, &auth_context, host.0.id, true)?;
+        clean_payload(&mut updated, draft.submitted_by, host.0.id, &draft.status)?;
+        if updated.doc_type != draft.doc_type.value() {
+            return Err(AppError::BadRequest("Content type cannot be changed".into()));
+        }
+        Ok(update_draft(conn, *id, &updated)?)
+    })?;
+    Ok(HttpResponse::Ok().json(saved))
 }
 
 // Bulk soft deletion used by the admin content page.
@@ -217,35 +242,41 @@ pub async fn delete_single_draft_api(
 
 // Submit draft
 //#[post("/{id}/submit")]
-pub async fn submit_draft_api(
-    data: web::Data<AppState>, 
-    id: web::Path<i32>,
-    
-) -> impl Responder {
-    let mut conn = data.db_pool.get().unwrap();
-    
-    log::info!("Submitting draft ID: {}", id);
-    match submit_draft(&mut conn, id.into_inner()) {
-        Ok( draft) => {       
-            HttpResponse::Ok().json(draft)
-        },
-        Err(_) => HttpResponse::InternalServerError().finish(),
+fn validate_submission(draft: &Draft) -> Result<(), AppError> {
+    let schema = FRONTEND_SCHEMA.types.get(&draft.doc_type)
+        .ok_or_else(|| AppError::BadRequest("Content type is not configured".into()))?;
+    let columns = serde_json::to_value(draft).map_err(|e| AppError::Internal(e.to_string()))?;
+    for field in schema.fields.iter().filter(|f| f.required == Some(true)) {
+        let mut container = if field.storage.as_deref() == Some("meta") { &columns["meta"] } else { &columns };
+        if let Some(path) = &field.path {
+            for key in path.split('.').filter(|p| !p.is_empty()) { container = &container[key]; }
+        }
+        let value = &container[&field.key];
+        if value.is_null() || value.as_str().map_or(false, |s| s.trim().is_empty()) || value.as_array().map_or(false, |a| a.is_empty()) {
+            return Err(AppError::BadRequest(format!("{} is required before submission", field.label)));
+        }
     }
+    Ok(())
 }
 
-// Request changes
-//#[post("/{id}/request_changes")]
-pub async fn request_changes_api(
-    data: web::Data<AppState>,
-    id: web::Path<i32>,
-    info: web::Json<(i32, String)>, // (reviewer_id, notes)
-) -> impl Responder {
-    let (reviewer_id, notes) = info.into_inner();
-    let mut conn = data.db_pool.get().unwrap();
-    match request_changes(&mut conn, id.into_inner(), reviewer_id, &notes) {
-        Ok(draft) => HttpResponse::Ok().json(draft),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+pub async fn submit_draft_api(data: web::Data<AppState>, id: web::Path<i32>, auth: AuthContext, host: HostContext) -> Result<HttpResponse, AppError> {
+    let mut conn = data.db_conn()?;
+    let saved = conn.immediate_transaction::<_, AppError, _>(|conn| {
+        let draft = checked_draft(conn, *id, &auth, host.0.id, true)?;
+        if !matches!(draft.status.as_str(), "draft" | "changes_requested") {
+            return Err(AppError::BadRequest("Content is already submitted or approved".into()));
+        }
+        validate_submission(&draft)?;
+        Ok(submit_draft(conn, *id)?)
+    })?;
+    Ok(HttpResponse::Ok().json(saved))
+}
+
+pub async fn request_changes_api(data: web::Data<AppState>, id: web::Path<i32>, info: web::Json<(i32, String)>, auth: AuthContext, host: HostContext) -> Result<HttpResponse, AppError> {
+    review_access(&auth, host.0.id)?;
+    let mut conn = data.db_conn()?;
+    checked_draft(&mut conn, *id, &auth, host.0.id, false)?;
+    Ok(HttpResponse::Ok().json(request_changes(&mut conn, *id, auth.user_id, &info.1)?))
 }
 
 // curl 'https://dev.revillagesociety.org/api/drafts/4/approve' \
@@ -267,50 +298,28 @@ pub async fn request_changes_api(
 
 // Approve draft
 //#[post("/{id}/approve")]
-pub async fn approve_draft_api(
-    data: web::Data<AppState>,
-    id: web::Path<i32>,
-    admin_context: AuthContext,
-    req: HttpRequest,
-    //reviewer_id: web::Json<i32>,
-) -> Result<HttpResponse, AuthError> {
-    let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
-
-    require_role_for_host(
-        &admin_context,
-        incoming_host_id,
-        &[MemberRole::Admin, MemberRole::Reviewer],
-    )?;
-    let mut conn = data.db_pool.get().unwrap();
-    let reviewer_id = admin_context.user_id; // TODO: get from AuthenticatedUser
-    match approve_draft(&mut conn, id.into_inner(), reviewer_id) {
-        Ok(draft) => Ok(HttpResponse::Ok().json(draft)),
-        Err(_) => Err(AuthError::Forbidden("Approval Failed")),
-    }
+pub async fn approve_draft_api(data: web::Data<AppState>, id: web::Path<i32>, auth: AuthContext, host: HostContext) -> Result<HttpResponse, AppError> {
+    review_access(&auth, host.0.id)?;
+    let mut conn = data.db_conn()?;
+    let saved = conn.immediate_transaction::<_, AppError, _>(|conn| {
+        let draft = checked_draft(conn, *id, &auth, host.0.id, false)?;
+        if draft.status != "submitted" { return Err(AppError::BadRequest("Content must be submitted first".into())); }
+        Ok(approve_draft(conn, *id, auth.user_id)?)
+    })?;
+    Ok(HttpResponse::Ok().json(saved))
 }
 
 // Approve draft
 //#[post("/{id}/deploy")]
-pub async fn deploy_draft_api(
-    data: web::Data<AppState>,
-    id: web::Path<i32>,
-    admin_context: AuthContext,
-    req: HttpRequest,
-    //reviewer_id: web::Json<i32>,
-) -> Result<HttpResponse, AuthError> {
-    let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
-
-    require_role_for_host(
-        &admin_context,
-        incoming_host_id,
-        &[MemberRole::Admin, MemberRole::Reviewer],
-    )?;
-    let mut conn = data.db_pool.get().unwrap();
-    let reviewer_id = admin_context.user_id; // TODO: get from AuthenticatedUser
-    match deploy_draft(&mut conn, id.into_inner(), reviewer_id) {
-        Ok(draft) => Ok(HttpResponse::Ok().json(draft)),
-        Err(_) => Err(AuthError::Forbidden("Approval Failed")),
-    }
+pub async fn deploy_draft_api(data: web::Data<AppState>, id: web::Path<i32>, auth: AuthContext, host: HostContext) -> Result<HttpResponse, AppError> {
+    review_access(&auth, host.0.id)?;
+    let mut conn = data.db_conn()?;
+    let saved = conn.immediate_transaction::<_, AppError, _>(|conn| {
+        let draft = checked_draft(conn, *id, &auth, host.0.id, false)?;
+        if draft.status != "approved" { return Err(AppError::BadRequest("Content must be approved first".into())); }
+        Ok(deploy_draft(conn, *id, auth.user_id)?)
+    })?;
+    Ok(HttpResponse::Ok().json(saved))
 }
 
 fn opt_str(s: &Option<String>) -> &str {
@@ -491,18 +500,10 @@ fn _generate_frontmatter_old(draft: &Draft) -> String {
 }
 
 //#[get("/{id}/md")]
-pub async fn get_draft_md_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
-    let mut conn = data.db_pool.get().unwrap();
-    match get_draft(&mut conn, id.into_inner()) {
-        Ok(draft) => {
-            let frontmatter = generate_frontmatter(&draft);
-            let md_content = format!("{}{}", frontmatter, draft.body_md);
-            HttpResponse::Ok()
-                .content_type("text/markdown")
-                .body(md_content)
-        }
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
+pub async fn get_draft_md_api(data: web::Data<AppState>, id: web::Path<i32>, auth: AuthContext, host: HostContext) -> Result<HttpResponse, AppError> {
+    let mut conn = data.db_conn()?;
+    let draft = checked_draft(&mut conn, *id, &auth, host.0.id, false)?;
+    Ok(HttpResponse::Ok().content_type("text/markdown").body(format!("{}{}", generate_frontmatter(&draft), draft.body_md)))
 }
 #[derive(Deserialize, Debug)]
 pub struct BulkIds {
@@ -510,39 +511,32 @@ pub struct BulkIds {
 }
 
 //#[post("/bulk/approve")]
-pub async fn bulk_approve(
-    data: web::Data<crate::app_state::AppState>,
-    admin_context: AuthContext,
-    ids: web::Json<BulkIds>,
-    req: HttpRequest,
-) -> Result<HttpResponse, AuthError> {
-    let incoming_host_id = require_host_id(&req).await.unwrap(); // safe because fallback exists
-
-    require_role_for_host(
-        &admin_context,
-        incoming_host_id,
-        &[MemberRole::Admin, MemberRole::Reviewer],
-    )?;
-    let ids = ids.into_inner().ids;
-    let mut conn = data.db_pool.get().unwrap();
-    match approve_drafts(&mut conn, &ids, admin_context.user_id) {
-        Ok(_) => (),
-        Err(_) => return Err(AuthError::Forbidden("Failed to approve drafts")),
-    };
+pub async fn bulk_approve(data: web::Data<AppState>, auth: AuthContext, ids: web::Json<BulkIds>, host: HostContext) -> Result<HttpResponse, AppError> {
+    review_access(&auth, host.0.id)?;
+    let mut conn = data.db_conn()?;
+    conn.immediate_transaction::<_, AppError, _>(|conn| {
+        for id in &ids.ids {
+            let draft = checked_draft(conn, *id, &auth, host.0.id, false)?;
+            if draft.status != "submitted" { return Err(AppError::BadRequest("Only submitted content can be approved".into())); }
+        }
+        approve_drafts(conn, &ids.ids, auth.user_id)?;
+        Ok(())
+    })?;
     Ok(HttpResponse::Ok().finish())
 }
 
 
+// Contributor routes bypass the legacy admin-only URL scope. Legacy URLs remain available.
 pub fn scope(path: &RoutePath) -> Scope {
     web::scope("")
-    .service(register(
-            "draft_create_public",
-            Method::POST,
-            path.as_str(),
-            "new",
-            create_draft_api,
-            MemberRole::Member,
-        ))
+        .service(register("draft_create_public", Method::POST, path.as_str(), "new", create_draft_api, MemberRole::Member))
+        .service(register("content_create", Method::POST, path.as_str(), "create", create_draft_api, MemberRole::Member))
+        .service(register("content_list", Method::GET, path.as_str(), "list", get_drafts_api, MemberRole::Member))
+        .service(register("content_schema", Method::GET, path.as_str(), "doc_schema", get_doc_schema, MemberRole::Member))
+        .service(register("content_get", Method::GET, path.as_str(), "get/{id}", get_draft_api, MemberRole::Member))
+        .service(register("content_update", Method::POST, path.as_str(), "update/{id}", update_draft_api, MemberRole::Member))
+        .service(register("content_submit", Method::POST, path.as_str(), "{id}/submit", submit_draft_api, MemberRole::Member))
+        .service(register("content_approve", Method::POST, path.as_str(), "{id}/approve", approve_draft_api, MemberRole::Reviewer))
 }
 
 pub fn admin_scope(path: &RoutePath) -> Scope {
@@ -716,5 +710,71 @@ mod research_tests {
         assert_eq!(exported["result_id"].as_str(), Some("soil-one"));
         assert_eq!(exported["doc_type"].as_str(), Some("results"));
         assert_eq!(serde_json::from_str::<DocType>("\"experiment\"").unwrap(), DocType::Experiment);
+    }
+}
+
+#[cfg(test)]
+mod content_permissions_tests {
+    use super::*;
+    use diesel::{Connection, connection::SimpleConnection};
+    use crate::validator::MembershipContext;
+
+    fn auth(user_id: i32, host_id: i32, role: MemberRole) -> AuthContext {
+        AuthContext { user_id, memberships: vec![MembershipContext {host_id, role}] }
+    }
+    fn database() -> diesel::SqliteConnection {
+        let mut conn = diesel::SqliteConnection::establish(":memory:").unwrap();
+        conn.batch_execute(include_str!("../../migrations/2026-01-04-170231_drafts/up.sql")).unwrap();
+        conn.batch_execute(include_str!("../../migrations/2026-02-28-153103_addHostIdDraft/up.sql")).unwrap();
+        conn.batch_execute("INSERT INTO drafts (id, doc_type, title, body_md, submitted_by, host_id) VALUES
+            (1, 'post', 'Own draft', 'Body', 7, 1), (2, 'post', 'Private', '', 8, 1), (3, 'post', 'Other site', '', 7, 2);").unwrap();
+        conn
+    }
+    #[test]
+    fn ownership_and_site_are_checked_for_direct_ids_and_export() {
+        let mut conn = database();
+        let member = auth(7, 1, MemberRole::Member);
+        assert!(checked_draft(&mut conn, 1, &member, 1, true).is_ok());
+        assert!(checked_draft(&mut conn, 2, &member, 1, false).is_err());
+        assert!(checked_draft(&mut conn, 3, &member, 1, false).is_err());
+        assert!(checked_draft(&mut conn, 1, &auth(7, 2, MemberRole::Admin), 1, false).is_err());
+        assert!(checked_draft(&mut conn, 2, &auth(7, 1, MemberRole::Reviewer), 1, true).is_ok());
+        assert!(checked_draft(&mut conn, 3, &auth(7, 1, MemberRole::Admin), 1, false).is_err());
+        assert!(review_access(&member, 1).is_err());
+    }
+    #[test]
+    fn contributor_can_read_but_not_edit_submitted_and_approved_work() {
+        let mut conn = database();
+        let member = auth(7, 1, MemberRole::Member);
+        submit_draft(&mut conn, 1).unwrap();
+        assert!(checked_draft(&mut conn, 1, &member, 1, false).is_ok());
+        assert!(checked_draft(&mut conn, 1, &member, 1, true).is_err());
+        approve_draft(&mut conn, 1, 9).unwrap();
+        assert!(checked_draft(&mut conn, 1, &member, 1, true).is_err());
+        request_changes(&mut conn, 1, 9, "Revise").unwrap();
+        assert!(checked_draft(&mut conn, 1, &member, 1, true).is_ok());
+        delete_drafts(&mut conn, &[1], 1).unwrap();
+        assert!(checked_draft(&mut conn, 1, &member, 1, false).is_err());
+    }
+    #[test]
+    fn submission_requires_configured_fields_but_allows_incomplete_drafts() {
+        let mut conn = database();
+        let mut draft = get_draft(&mut conn, 1).unwrap();
+        assert!(validate_submission(&draft).is_ok()); // Post description/author are optional.
+        draft.body_md.clear();
+        assert!(validate_submission(&draft).is_err());
+        draft.body_md = "Body".into();
+        draft.title = "  ".into();
+        assert!(validate_submission(&draft).is_err());
+        assert!(checked_draft(&mut conn, 2, &auth(8, 1, MemberRole::Member), 1, true).is_ok());
+    }
+
+    #[test]
+    fn save_cannot_forge_approval_owner_or_host() {
+        let mut conn = database();
+        let mut payload: NewDraft = serde_json::from_value(json!({"doc_type":"post", "title":"Edited", "body_md":"Body", "status":"approved", "submitted_by":99, "host_id":2, "reviewed_by":99})).unwrap();
+        clean_payload(&mut payload, 7, 1, "draft").unwrap();
+        let saved = update_draft(&mut conn, 1, &payload).unwrap();
+        assert_eq!((saved.host_id, saved.submitted_by, saved.status.as_str(), saved.reviewed_by), (1, 7, "draft", None));
     }
 }

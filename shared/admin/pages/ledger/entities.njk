@@ -1,0 +1,352 @@
+---
+title: "Ledger Entities List"
+layout: "layouts/admin.njk"
+permalink: "/admin/ledger/entities/"
+---
+
+<div x-data="entityManager()" x-init="loadEntities()" class="p-6">
+
+  <div class="grid grid-cols-3 gap-8">
+
+    <!-- LEFT COLUMN -->
+    <div>
+
+      <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-bold">Entities</h1>
+
+        <button
+          @click="showCreateModal = true"
+          class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          New Entity
+        </button>
+      </div>
+
+      <table class="w-full border bg-white">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="p-2 border text-left">Name</th>
+            <th class="p-2 border">Type</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <template x-for="entity in entities" :key="entity.id">
+            <tr class="hover:bg-gray-50">
+
+              <td class="p-2 border">
+                <a
+                  @click="selectEntity(entity)"
+                  class="text-blue-600 hover:underline cursor-pointer"
+                >
+                  <span x-text="entity.name"></span>
+                </a>
+
+                <button
+                  @click="navigator.clipboard.writeText(entity.id)"
+                  class="ml-2 text-gray-400 hover:text-gray-700"
+                >
+                  <i class="fi fi-rr-copy"></i>
+                </button>
+              </td>
+
+              <td class="p-2 border text-sm text-gray-600"
+                  x-text="entity.entity_type"></td>
+
+            </tr>
+          </template>
+        </tbody>
+      </table>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-span-2" x-show="selectedEntity">
+
+      <h1 class="text-2xl font-semibold mb-6">
+        Activity for <span x-text="selectedEntity?.name"></span>
+      </h1>
+
+      <!-- Net totals -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <h3 class="font-semibold text-blue-700 mb-2">Net Balance</h3>
+
+        <template x-for="t in netTotals" :key="t.resource_type">
+          <div class="flex justify-between text-sm">
+
+            <span x-text="t.resource_type"></span>
+
+            <span :class="t.total >= 0 ? 'text-green-600' : 'text-red-600'">
+              <span x-text="t.total"></span>
+              <span x-text="t.unit"></span>
+            </span>
+
+          </div>
+        </template>
+      </div>
+
+      <!-- Totals row -->
+      <div class="grid grid-cols-2 gap-6 mb-6">
+
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 class="font-semibold text-green-700 mb-2">Inflows</h3>
+
+          <template x-for="t in inflowTotals" :key="t.resource_type">
+            <div class="flex justify-between text-sm">
+              <span x-text="t.resource_type"></span>
+              <span>
+                <span x-text="t.total"></span>
+                <span x-text="t.unit"></span>
+              </span>
+            </div>
+          </template>
+        </div>
+
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 class="font-semibold text-red-700 mb-2">Outflows</h3>
+
+          <template x-for="t in outflowTotals" :key="t.resource_type">
+            <div class="flex justify-between text-sm">
+              <span x-text="t.resource_type"></span>
+              <span>
+                <span x-text="t.total"></span>
+                <span x-text="t.unit"></span>
+              </span>
+            </div>
+          </template>
+        </div>
+
+      </div>
+
+      <!-- Outflows -->
+      <div class="mb-10">
+        <h2 class="text-lg font-semibold mb-3 text-red-600">Outflows</h2>
+
+        <template x-for="flow in outflows" :key="flow.id">
+          <div class="border rounded-lg p-4 mb-3 bg-white shadow-sm">
+
+            <div class="flex justify-between text-sm text-gray-500">
+              <span x-text="formatDate(flow.timestamp)"></span>
+              <span x-text="flow.resource_type"></span>
+            </div>
+
+            <div class="mt-2 text-lg">
+              → <span class="font-semibold" x-text="entMap[flow.to_entity]?.name"></span>
+            </div>
+
+            <div class="text-gray-700">
+              <span x-text="flow.quantity_value"></span>
+              <span x-text="flow.quantity_unit"></span>
+            </div>
+
+          </div>
+        </template>
+      </div>
+
+      <!-- Inflows -->
+      <div>
+        <h2 class="text-lg font-semibold mb-3 text-green-600">Inflows</h2>
+
+        <template x-for="flow in inflows" :key="flow.id">
+          <div class="border rounded-lg p-4 mb-3 bg-white shadow-sm">
+
+            <div class="flex justify-between text-sm text-gray-500">
+              <span x-text="formatDate(flow.timestamp)"></span>
+              <span x-text="flow.resource_type"></span>
+            </div>
+
+            <div class="mt-2 text-lg">
+              ← <span class="font-semibold" x-text="entMap[flow.from_entity]?.name"></span>
+            </div>
+            <div class="mt-2 text-sm text-gray-500">
+              <span class="font-semibold" x-text="flow.notes"></span>
+            </div>
+
+            <div class="text-gray-700">
+              <span x-text="flow.quantity_value"></span>
+              <span x-text="flow.quantity_unit"></span>
+            </div>
+
+          </div>
+        </template>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- CREATE ENTITY MODAL -->
+  <div
+    x-show="showCreateModal"
+    class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+    x-transition
+  >
+
+    <div class="bg-white rounded-lg shadow-lg w-96 p-6">
+
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold">Create Entity</h2>
+
+        <button
+          @click="showCreateModal = false"
+          class="text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form @submit.prevent="createEntity" class="space-y-3">
+
+        <input
+          type="text"
+          placeholder="Name"
+          x-model="newEntity.name"
+          class="border p-2 w-full rounded"
+          required
+        />
+
+        <input
+          type="text"
+          placeholder="Entity Type"
+          x-model="newEntity.entity_type"
+          class="border p-2 w-full rounded"
+          required
+        />
+
+        <div class="flex justify-end gap-2 pt-2">
+
+          <button
+            type="button"
+            @click="showCreateModal = false"
+            class="px-3 py-2 border rounded"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Create
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+function entityManager() {
+  return {
+
+    entities: [],
+    newEntity: { name:'', entity_type:'' },
+
+    selectedEntity: null,
+    inflows: [],
+    outflows: [],
+    entMap: {},
+
+    showCreateModal: false,
+
+    async loadEntities() {
+      this.entities = await Alpine.store("api").call("get_entities", {}, {});
+    },
+
+    selectEntity(entity) {
+      this.selectedEntity = entity
+      this.entityId = entity.id
+      this.loadEntity()
+    },
+
+    async loadEntity() {
+      const data = await Alpine
+        .store("api")
+        .call("get_entity_flows", { id: this.entityId }, {})
+
+      this.inflows = data.inflows
+      this.outflows = data.outflows
+
+      // convert entity list to lookup table
+      this.entMap = Object.fromEntries(data.entities.map(e => [e.id, e]));
+      console.log(this.entMap);
+
+    },
+
+    async createEntity() {
+      this.newEntity.details = {};
+      const entity = await Alpine
+        .store("api")
+        .call("create_entity", {}, this.newEntity)
+
+      this.entities.push(entity)
+
+      this.newEntity = { name:'', entity_type:'' }
+
+      this.showCreateModal = false
+    },
+
+    formatDate(ts) {
+      return new Date(ts).toLocaleString()
+    },
+
+    sumByResource(flows) {
+      const totals = {}
+
+      flows.forEach(flow => {
+        const key = flow.resource_type
+
+        if (!totals[key]) {
+          totals[key] = {
+            resource_type: key,
+            unit: flow.quantity_unit,
+            total: 0
+          }
+        }
+
+        totals[key].total += flow.quantity_value
+      })
+
+      return Object.values(totals)
+    },
+
+    get inflowTotals() {
+      return this.sumByResource(this.inflows)
+    },
+
+    get outflowTotals() {
+      return this.sumByResource(this.outflows)
+    },
+
+    get netTotals() {
+
+      const map = {}
+
+      const add = (flow, sign) => {
+        const key = flow.resource_type
+
+        if (!map[key]) {
+          map[key] = {
+            resource_type: key,
+            unit: flow.quantity_unit,
+            total: 0
+          }
+        }
+
+        map[key].total += sign * flow.quantity_value
+      }
+
+      this.inflows.forEach(f => add(f, 1))
+      this.outflows.forEach(f => add(f, -1))
+
+      return Object.values(map)
+    }
+
+  }
+}
+</script>

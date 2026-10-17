@@ -1,0 +1,96 @@
+---
+title: Admin Api Workbench 
+permalink: /admin/workbench/
+
+layout: layouts/default.njk
+---
+<div x-data="apiWorkbench()" x-init="init()" class="p-4 space-y-6">
+<input
+  type="text"
+  placeholder="Filter routes…"
+  class="border px-2 py-1 w-full"
+  x-model="query"
+/>
+  <template x-for="route in filteredRoutes" :key="route.key">
+    <div class="border rounded p-3">
+
+      <div class="font-bold" x-text="route.key"></div>
+      <div class="text-xs opacity-60">
+        <span x-text="route.method"></span>
+        <span x-text="route.url"></span>
+      </div>
+
+      <!-- params -->
+      <textarea
+        class="border w-full mt-2 text-xs p-1"
+        x-model="params[route.key]"
+        placeholder='{"id": 123}'>
+      </textarea>
+
+      <!-- body -->
+      <textarea
+        x-show="route.method !== 'GET'"
+        class="border w-full mt-2 text-xs p-1"
+        x-model="bodies[route.key]"
+        placeholder='{"example":"data"}'>
+      </textarea>
+
+      <button class="border px-2 py-1 mt-2"
+              @click="run(route.key)">
+        Run
+      </button>
+
+      <pre class="bg-gray-100 mt-2 p-2 text-xs overflow-auto"
+           x-text="responses[route.key]"></pre>
+
+    </div>
+  </template>
+
+</div>
+<script>
+    function apiWorkbench() {
+  return {
+    routes: [],
+    params: {},
+    bodies: {},
+    responses: {},
+    query: "",
+    
+    get filteredRoutes() {
+      if (!this.query) return this.routes;
+
+      const q = this.query.toLowerCase();
+
+      return this.routes.filter(route =>
+        route.key.toLowerCase().includes(q) ||
+        route.url.toLowerCase().includes(q) ||
+        route.method.toLowerCase().includes(q)
+      );
+    },
+
+
+    async init() {
+      const caps = await loadRoutes();
+      this.routes = Object.values(caps);
+    },
+
+    async run(key) {
+      try {
+        const params = this.params[key]
+          ? JSON.parse(this.params[key])
+          : {};
+
+        const body = this.bodies[key]
+          ? JSON.parse(this.bodies[key])
+          : null;
+
+        const result = await Alpine.store("api").call(key, params, body);
+
+        this.responses[key] = JSON.stringify(result, null, 2);
+      } catch (e) {
+        this.responses[key] = e.message;
+      }
+    }
+  }
+}
+</script>

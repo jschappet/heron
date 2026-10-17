@@ -19,6 +19,7 @@ use serde_json::json;
 pub async fn profile_json(
     data: web::Data<AppState>,
     session: Session,
+    host: crate::middleware::host::HostContext,
 ) -> Result<HttpResponse, AppError> {
     // Try to get the user_id from the session
     let user_id = match session.get::<i32>("user_id") {
@@ -55,7 +56,13 @@ pub async fn profile_json(
             })));
     }
     // Load roles
-    let roles = load_roles(&mut conn, user_id)?;
+    let roles = {
+        use diesel::prelude::*;
+        use crate::schema::{roles, memberships};
+        roles::table.inner_join(memberships::table.on(memberships::role_id.eq(roles::id)))
+            .filter(memberships::user_id.eq(user_id)).filter(memberships::host_id.eq(host.0.id))
+            .filter(memberships::active.eq(true)).select(roles::name).load::<String>(&mut conn)?
+    };
 
     // Return structured JSON response
     Ok(HttpResponse::Ok().json(json!({
@@ -113,7 +120,7 @@ pub fn scope(path: &RoutePath) -> Scope {
     path.as_str(),
     "",
     profile_json,
-    crate::types::MemberRole::Member,
+    crate::types::MemberRole::Public,
 ))
 .service(register(
     "profile_offers_json",
@@ -137,3 +144,16 @@ pub fn scope(path: &RoutePath) -> Scope {
 // .service(profile_json)
 //         .service(profile_offers_json)
 //         .service(profile_completed_json)
+#[cfg(test)]
+mod capability_tests {
+    use super::*;
+    use crate::types::MemberRole;
+
+    #[actix_web::test]
+    async fn session_check_is_public_but_profile_content_remains_protected() {
+        let _scope = scope(&RoutePath::new(&["/api", "profile"]));
+        let routes = crate::routes::routes().lock().unwrap();
+        assert_eq!(routes.iter().find(|r| r.key == "profile_json").unwrap().roles, vec![MemberRole::Public]);
+        assert_eq!(routes.iter().find(|r| r.key == "profile_offers_json").unwrap().roles, vec![MemberRole::Member]);
+    }
+}

@@ -1,0 +1,46 @@
+<script src="/assets/js/admin-dashboard.js"></script>
+<section x-data="adminDashboard()" class="heron-content max-w-7xl mx-auto px-4 py-10" data-pagefind-ignore>
+  {% include "components/content-nav.njk" %}
+  <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold">Admin dashboard</h1>
+      <p class="mt-2">Messages, content, and community activity at a glance.</p>
+    </div>
+    <button type="button" class="btn btn-outline" @click="refresh()" :disabled="loading">Refresh summaries</button>
+  </div>
+  <p x-show="loading" role="status">Loading summaries…</p>
+  <p x-show="error" x-text="error" role="alert" class="my-4 text-red-700"></p>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <section class="border rounded-lg p-6 space-y-3">
+      <h2 class="text-xl font-semibold">Messages</h2>
+      <p>Read contact submissions and reply by email.</p>
+      <p class="text-2xl font-semibold" x-text="messages ? `${messages.count} new` : '—'"></p>
+      <p>Opening a message marks it read for all site admins.</p>
+      <a href="/admin/messages/" class="btn btn-primary">Open messages</a>
+    </section>
+    <section class="border rounded-lg p-6 space-y-3">
+      <h2 class="text-xl font-semibold">Drafts</h2>
+      <p>Write, review, and publish site content.</p>
+      <p class="text-2xl font-semibold" x-text="drafts ? `${drafts.total} content items` : '—'"></p>
+      <p x-show="drafts" x-text="drafts ? `${drafts.draft} drafts · ${drafts.submitted} awaiting review · ${drafts.changes} need changes` : ''"></p>
+      <p x-show="failures.drafts" x-text="failures.drafts" role="status"></p>
+      <a href="/admin/content/" class="btn btn-primary">Manage content</a>
+    </section>
+    <section class="border rounded-lg p-6 space-y-3">
+      <h2 class="text-xl font-semibold">Workbench</h2>
+      <p>Explore and run the actions available to your account.</p>
+      <p class="text-2xl font-semibold" x-text="workbench ? `${workbench.total} available actions` : '—'"></p>
+      <p x-show="workbench" x-text="workbench ? `${workbench.reads} read actions · ${workbench.total - workbench.reads} change actions` : ''"></p>
+      <p x-show="failures.workbench" x-text="failures.workbench" role="status"></p>
+      <a href="/admin/workbench/" class="btn btn-primary">Open workbench</a>
+    </section>
+    <section class="border rounded-lg p-6 space-y-3">
+      <h2 class="text-xl font-semibold">Ledger</h2>
+      <p>Explore community flows, manage entities, and record contributions.</p>
+      <p class="text-2xl font-semibold" x-text="ledger ? `${ledger.total} recent flow events` : '—'"></p>
+      <p>Summary includes up to 100 flow events.</p>
+      <p x-show="failures.ledger" x-text="failures.ledger" role="status"></p>
+      <a href="/admin/ledger/" class="btn btn-primary">Open ledger</a>
+    </section>
+  </div>
+</section>
