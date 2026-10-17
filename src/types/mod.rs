@@ -420,6 +420,8 @@ pub enum DocType {
     Page,
     Idea,
     Transcript,
+    Results,
+    Experiment,
 }
 
 impl DocType {
@@ -432,6 +434,8 @@ impl DocType {
             DocType::Page => ("page", "Page"),
             DocType::Idea => ("idea", "Idea"),
             DocType::Transcript => ("transcript", "Transcript"),
+            DocType::Results => ("results", "Results"),
+            DocType::Experiment => ("experiment", "Experiment"),
         }
     }
 
@@ -452,6 +456,8 @@ impl DocType {
             DocType::Page,
             DocType::Idea,
             DocType::Transcript,
+            DocType::Results,
+            DocType::Experiment,
         ]
         .into_iter()
         .map(|d| ConfigOption {
@@ -470,6 +476,8 @@ impl DocType {
             DocType::Page,
             DocType::Idea,
             DocType::Transcript,
+            DocType::Results,
+            DocType::Experiment,
         ]
         .into_iter()
         .map(|d|  d.value())
@@ -489,6 +497,8 @@ impl FromSql<Text, Sqlite> for DocType {
             "page" => Ok(DocType::Page),
             "idea" => Ok(DocType::Idea),
             "transcript" => Ok(DocType::Transcript),
+            "results" => Ok(DocType::Results),
+            "experiment" => Ok(DocType::Experiment),
             other => Err(format!("Unknown DocType value: {}", other).into()),
         }
     }

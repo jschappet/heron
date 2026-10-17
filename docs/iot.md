@@ -286,3 +286,45 @@ acknowledge, or remove records. Page contents can shift as delivery drains the
 queue; use Refresh to see current contents. Pagination bounds page memory even
 when all 2,048 slots are occupied. Storage faults and empty queues have explicit
 messages.
+
+## Dummy temperature and humidity history
+
+`utils/dummy-sensor.mjs` is a dependency-free Node.js 20+ client that posts simulated
+readings through the real firmware endpoint. The default is seven days of history
+at five-minute intervals (2,017 reports), ending now. Values follow a daily cycle
+with seeded random noise. The device is clearly named as simulated.
+
+Preview without writing data or supplying credentials:
+
+```sh
+node utils/dummy-sensor.mjs --dry-run
+```
+
+To seed the Workshop host through local Heron, set `IOT_DEVICE_TOKEN` in your shell
+to the value of `[web_config].iot_device_token`, then run:
+
+```sh
+node utils/dummy-sensor.mjs \
+  --url http://workshop.localhost:8582
+```
+
+Heron uses its existing hostname mapping to select Workshop from
+`workshop.localhost`. The client appends `/api/iot` to a site URL; you can also
+supply an explicit endpoint path. For a remote server, use its HTTPS site URL.
+No Host header override is needed. The client requires the device token,
+not a browser login. It sends requests sequentially with a 15-second timeout and
+stops at the first failure. It does not follow redirects with the token.
+
+Options include `--days`, `--interval` (minutes), `--device-id`, `--seed`, and
+`--end` (ISO timestamp). The run prints its end time; repeat with that exact
+`--end` and the same options to reuse report IDs and avoid duplicate metric rows.
+Retries can still create additional raw archive files. A new end time or seed
+creates a new dataset. Each successful request writes a real metric and archive
+file; there is no automatic cleanup.
+
+Select `dummy-temperature` on `/metrics/` and choose Last 7 days. Observation times
+are historical; server receipt times reflect when you ran the utility. The
+registration's loopback address is a placeholder, not a running sensor webserver.
+
+Run `node --test tests/dummy-sensor.test.mjs` to verify generation and POST behavior
+without modifying a running Heron instance.

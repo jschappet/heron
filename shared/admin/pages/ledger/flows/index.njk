@@ -1,0 +1,66 @@
+---
+layout: "layouts/default.njk"
+permalink: "/admin/ledger/flows/"
+---
+
+<div class="flex h-[80vh] gap-4 p-4">
+
+  <!-- Left sidebar: filters -->
+  <div class="w-72 flex-shrink-0 bg-surface dark:bg-surface-dark p-4 rounded shadow space-y-4 overflow-y-auto">
+    <h2 class="text-lg font-semibold">Filters</h2>
+
+    <div>
+      <label for="timeline" class="block font-medium mb-1">Timeline (week start):</label>
+      <input type="range" id="timeline" min="0" max="10" step="1" value="0" class="w-full">
+      <span id="week-label" class="ml-2 font-medium"></span>
+    </div>
+
+    <div>
+      <label for="entityFilter" class="block font-medium mb-1">Entity:</label>
+      <select id="entityFilter" class="w-full border rounded px-2 py-1">
+        <option value="">All</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="resourceFilter" class="block font-medium mb-1">Resource:</label>
+      <select id="resourceFilter" class="w-full border rounded px-2 py-1">
+        <option value="">All</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="startDate" class="block font-medium mb-1">Start Date:</label>
+      <input type="date" id="startDate" class="w-full border rounded px-2 py-1">
+    </div>
+
+    <div>
+      <label for="endDate" class="block font-medium mb-1">End Date:</label>
+      <input type="date" id="endDate" class="w-full border rounded px-2 py-1">
+    </div>
+  </div>
+
+  <!-- Right column: force graph -->
+  <div class="flex-1 relative">
+    <svg id="mySvg" class="w-full h-full border rounded"></svg>
+
+    <!-- Hidden defs for arrowhead -->
+    <svg class="hidden">
+      <defs>
+        <marker id="arrowhead" viewBox="0 -5 10 10" refX="25" refY="0"
+                markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,-5L10,0L0,5" fill="#999" />
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+</div>
+
+<div class="tooltip absolute opacity-0 bg-white border p-2 rounded text-sm pointer-events-none"></div>
+
+<script type="module">
+  import { renderFlows } from '/assets/js/d3-flows.js';
+
+  renderFlows('#mySvg', '#timeline', '#week-label', '/api/ledger/ledger.json');
+</script>

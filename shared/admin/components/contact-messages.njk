@@ -1,0 +1,73 @@
+<section x-data="contactMessageInbox()" class="max-w-7xl mx-auto px-4 py-8" data-pagefind-ignore>
+  <h1 class="text-3xl font-bold">Messages</h1>
+  <p>Contact form messages for this site. Opening a message marks it read for all admins.</p>
+  <div class="flex flex-wrap items-center gap-4 my-4">
+    <label><input type="checkbox" x-model="unreadOnly" @change="load(true)"> New messages only</label>
+    <button type="button" @click="load()" :disabled="loading || sending" class="btn btn-sm">Refresh</button>
+    <span x-text="`${total} message${total === 1 ? '' : 's'}`" aria-live="polite"></span>
+  </div>
+  <p x-show="error" x-text="error" class="text-red-700 my-4" role="alert"></p>
+  <p x-show="notice" x-text="notice" class="text-green-700 my-4" role="status"></p>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <aside class="lg:col-span-1">
+      <p x-show="loading" role="status">Loading messages…</p>
+      <p x-show="!loading && !error && !messages.length">No messages in this view.</p>
+      <ul class="divide-y border rounded-lg">
+        <template x-for="message in messages" :key="message.id">
+          <li>
+            <button type="button" @click="open(message)" :disabled="opening || sending"
+              :aria-pressed="selected?.id === message.id" class="w-full text-left p-4 bg-white"
+              :class="{'border-l-4 border-green-700': selected?.id === message.id}">
+              <span class="block font-semibold" x-text="message.name"></span>
+              <span class="block break-words" x-text="message.email"></span>
+              <span class="block text-sm" x-text="date(message.created_at)"></span>
+              <span x-show="!message.read_at" class="badge">New</span>
+              <span class="block text-sm mt-2" x-text="message.message.slice(0, 120)"></span>
+            </button>
+          </li>
+        </template>
+      </ul>
+      <div class="flex justify-between gap-3 mt-4">
+        <button type="button" class="btn btn-sm" @click="offset = Math.max(0, offset - limit); load()" :disabled="offset === 0 || loading">Previous</button>
+        <button type="button" class="btn btn-sm" @click="offset += limit; load()" :disabled="offset + limit >= total || loading">Next</button>
+      </div>
+    </aside>
+    <div class="lg:col-span-2 min-w-0">
+      <p x-show="!selected">Choose a message to read and reply.</p>
+      <template x-if="selected">
+        <article class="border rounded-lg p-5">
+          <h2 class="text-xl font-bold" x-text="selected.name"></h2>
+          <p class="break-words" x-text="selected.email"></p>
+          <p class="text-sm" x-text="date(selected.created_at)"></p>
+          <button type="button" class="btn btn-sm" @click="markUnread()" :disabled="!selected.read_at || sending">Mark as new</button>
+          <p class="whitespace-pre-wrap break-words my-6" x-text="selected.message"></p>
+          <h3 class="text-lg font-semibold">Reply by email</h3>
+          <p class="text-sm break-words">To: <span x-text="selected.email"></span></p>
+          <p class="text-sm break-words" x-show="replyFrom">From: <span x-text="replyFrom"></span></p>
+          <p x-show="!replyFrom" role="alert">Email sending is not configured. You can still read messages.</p>
+          <form @submit.prevent="send()" class="space-y-4">
+            <div>
+              <label for="message-subject" class="block">Subject</label>
+              <input id="message-subject" x-model="subject" required maxlength="180" :disabled="sending || uncertain" class="input input-bordered w-full">
+            </div>
+            <div>
+              <label for="message-reply" class="block">Your reply</label>
+              <textarea id="message-reply" x-model="body" required maxlength="20000" rows="8" :disabled="sending || uncertain" class="textarea textarea-bordered w-full"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" :disabled="sending || !replyFrom || !body.trim()"
+              x-text="sending ? 'Sending…' : uncertain ? 'Check send result' : 'Send reply'"></button>
+          </form>
+          <h3 class="text-lg font-semibold mt-8">Reply history</h3>
+          <p x-show="!replies.length">No replies yet.</p>
+          <template x-for="reply in replies" :key="reply.id">
+            <section class="border-t py-4">
+              <p class="text-sm"><span x-text="status(reply)"></span> · <span x-text="date(reply.sent_at || reply.created_at)"></span></p>
+              <h4 class="font-semibold" x-text="reply.subject"></h4>
+              <p class="whitespace-pre-wrap break-words" x-text="reply.body"></p>
+            </section>
+          </template>
+        </article>
+      </template>
+    </div>
+  </div>
+</section>

@@ -48,14 +48,16 @@ impl DraftDomain {
         let timestamp = chrono::Utc::now().naive_utc();
         let ledger_domain = LedgerDomain::new(self.pool.clone());
 
-        let entity_user_id = ledger_domain
-            .resolve_or_create_entity(new.submitted_by.unwrap_or(0), new.host_id)
-            .unwrap();
+        let entity_user_id = match ledger_domain.resolve_or_create_entity(new.submitted_by.unwrap_or(0), new.host_id) {
+            Ok(id) => id,
+            Err(error) => { log::error!("Draft {} saved; ledger identity unavailable: {}", draft.id, error); return Ok(draft); }
+        };
 
         let from_id = entity_user_id.clone();
-        let to_id = ledger_domain
-            .resolve_entity("IdeaBank", new.host_id)
-            .unwrap();
+        let to_id = match ledger_domain.resolve_entity("IdeaBank", new.host_id) {
+            Ok(id) => id,
+            Err(error) => { log::error!("Draft {} saved; IdeaBank unavailable: {}", draft.id, error); return Ok(draft); }
+        };
 
         let new_flow = crate::models::flow_events::NewFlowEvent {
             id: uuid::Uuid::new_v4().to_string(),

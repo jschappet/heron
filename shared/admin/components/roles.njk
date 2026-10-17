@@ -1,0 +1,20 @@
+<script src="/assets/js/content-management.js"></script>
+<section x-data="siteRoles()" class="heron-content max-w-5xl mx-auto py-6 space-y-6" data-pagefind-ignore="all">
+  {% include "components/content-nav.njk" %}
+  <h1 class="text-3xl font-bold">Manage Roles</h1>
+  <p>Manage role assignments for this site. The member role grants contributor access. Administrators can review content and manage roles.</p>
+  <p class="alert alert-error" role="alert" x-show="error" x-text="error"></p>
+  <p class="alert alert-success" role="status" x-show="message" x-text="message"></p>
+  <form @submit.prevent="lookup" class="flex flex-col sm:flex-row gap-3 items-end">
+    <label class="flex-1 w-full">Find an existing account by exact email<input type="email" required class="input input-bordered w-full" x-model="lookupEmail" placeholder="Email address"></label>
+    <button class="btn btn-outline" :disabled="busy">Find account</button>
+  </form>
+  <form @submit.prevent="assign" class="flex flex-col sm:flex-row flex-wrap gap-4 items-end">
+    <label class="w-full sm:flex-1">Member<select required class="select select-bordered w-full" x-model="userId"><option value="">Choose a member</option><template x-for="user in users" :key="user.id"><option :value="user.id" x-text="user.username + ' (' + user.email + ')'"></option></template></select></label>
+    <label class="w-full sm:flex-1">Role<select required class="select select-bordered w-full" x-model="roleId"><option value="">Choose a role</option><template x-for="role in roles" :key="role.id"><option :value="role.id" x-text="role.name"></option></template></select></label>
+    <button class="btn btn-primary" :disabled="busy">Assign role</button>
+  </form>
+  <label class="block">Find a member<input type="search" class="input input-bordered w-full" x-model="search"></label>
+  <p x-show="!error && !filteredUsers.length">No existing site members match.</p>
+  <template x-for="user in filteredUsers" :key="user.id"><article class="border rounded p-4 space-y-3"><h2 class="font-semibold" x-text="user.username"></h2><p class="break-all" x-text="user.email"></p><div class="flex flex-wrap gap-3"><template x-for="assignment in userRoles(user.id)" :key="assignment.id"><button class="btn btn-outline btn-sm" :disabled="busy" @click="revoke(assignment, user)" :aria-label="'Revoke ' + roleName(assignment.role_id) + ' for ' + user.username"><span x-text="roleName(assignment.role_id)"></span> × Revoke</button></template></div></article></template>
+</section>
