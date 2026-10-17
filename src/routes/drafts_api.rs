@@ -185,13 +185,33 @@ pub async fn update_draft_api(
     }
 }
 
-// Delete draft
-//#[delete("/{id}")]
-pub async fn delete_draft_api(data: web::Data<AppState>, id: web::Path<i32>) -> impl Responder {
-    let mut conn = data.db_pool.get().unwrap();
-    match delete_draft(&mut conn, id.into_inner()) {
-        Ok(_) => HttpResponse::Ok().finish(),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+// Bulk soft deletion used by the admin content page.
+pub async fn delete_draft_api(
+    data: web::Data<AppState>,
+    ids: web::Json<BulkIds>,
+    auth_context: AuthContext,
+    host: HostContext,
+) -> Result<HttpResponse, AuthError> {
+    require_role_for_host(&auth_context, host.0.id, &[MemberRole::Admin])?;
+    let mut conn = data.db_pool.get().map_err(|e| AuthError::Internal(e.to_string()))?;
+    let deleted = delete_drafts(&mut conn, &ids.ids, host.0.id)
+        .map_err(|e| AuthError::Internal(e.to_string()))?;
+    Ok(HttpResponse::Ok().json(json!({ "deleted": deleted })))
+}
+
+// Preserve the existing single-draft endpoint with the same soft-delete behavior.
+pub async fn delete_single_draft_api(
+    data: web::Data<AppState>,
+    id: web::Path<i32>,
+    auth_context: AuthContext,
+    host: HostContext,
+) -> Result<HttpResponse, AuthError> {
+    require_role_for_host(&auth_context, host.0.id, &[MemberRole::Admin])?;
+    let mut conn = data.db_pool.get().map_err(|e| AuthError::Internal(e.to_string()))?;
+    match delete_drafts(&mut conn, &[id.into_inner()], host.0.id)
+        .map_err(|e| AuthError::Internal(e.to_string()))? {
+        0 => Ok(HttpResponse::NotFound().finish()),
+        _ => Ok(HttpResponse::Ok().finish()),
     }
 }
 
@@ -528,6 +548,14 @@ pub fn scope(path: &RoutePath) -> Scope {
 pub fn admin_scope(path: &RoutePath) -> Scope {
     web::scope("")
         .service(register(
+            "delete_draft_api",
+            Method::POST,
+            path.as_str(),
+            "bulk/delete",
+            delete_draft_api,
+            MemberRole::Admin,
+        ))
+        .service(register(
             "draft_bulk_approve",
             Method::POST,
             path.as_str(),
@@ -582,7 +610,7 @@ pub fn admin_scope(path: &RoutePath) -> Scope {
             Method::DELETE,
             path.as_str(),
             "{id}",
-            delete_draft_api,
+            delete_single_draft_api,
             MemberRole::Admin,
         ))
         // Workflow Actions
@@ -643,3 +671,50 @@ pub fn admin_scope(path: &RoutePath) -> Scope {
 // .service(approve_draft_api)
 // .service(get_draft_md_api)
 // .service(deploy_draft_api)
+
+#[cfg(test)]
+mod deletion_tests {
+    use super::*;
+
+    #[actix_web::test]
+    async fn bulk_delete_capability_matches_content_page_request() {
+        let _scope = admin_scope(&RoutePath::new(&["api", "admin", "drafts"]));
+        let routes = crate::routes::routes().lock().unwrap();
+        let route = routes.iter().find(|r| r.key == "delete_draft_api").unwrap();
+        assert_eq!(route.method, "POST");
+        assert_eq!(route.segments.last().unwrap(), "bulk/delete");
+        assert_eq!(route.roles, vec![MemberRole::Admin]);
+        let body: BulkIds = serde_json::from_value(json!({"ids": [1, 2]})).unwrap();
+        assert_eq!(body.ids, vec![1, 2]);
+    }
+}
+
+#[cfg(test)]
+mod research_tests {
+    use super::*;
+
+    #[test]
+    fn experiment_schema_and_result_links_survive_export() {
+        let schema = load_frontend_schema("./doc_schema.json").unwrap();
+        assert!(DocType::list().contains(&"experiment"));
+        let experiment = schema.types.get(&DocType::Experiment).unwrap();
+        assert!(experiment.fields.iter().any(|f| f.key == "experiment_id"));
+        let result = schema.types.get(&DocType::Results).unwrap();
+        assert!(result.fields.iter().any(|f| f.key == "experiment_id"));
+        let draft = Draft {
+            id: 1, doc_type: DocType::Results, title: "Field observation".into(),
+            description: None, tags: None, author: None,
+            meta: Some(JsonField(json!({"experiment_id": "soil", "result_id": "soil-one", "summary": "A useful observation"}))),
+            body_md: "Notes".into(), status: "approved".into(), submitted_by: 1,
+            submitted_at: None, reviewed_by: None, reviewed_at: None,
+            review_notes: None, details: None, host_id: 1,
+        };
+        let markdown = generate_frontmatter(&draft);
+        let yaml = markdown.trim().trim_matches('-').trim();
+        let exported: serde_yaml::Value = serde_yaml::from_str(yaml).unwrap();
+        assert_eq!(exported["experiment_id"].as_str(), Some("soil"));
+        assert_eq!(exported["result_id"].as_str(), Some("soil-one"));
+        assert_eq!(exported["doc_type"].as_str(), Some("results"));
+        assert_eq!(serde_json::from_str::<DocType>("\"experiment\"").unwrap(), DocType::Experiment);
+    }
+}

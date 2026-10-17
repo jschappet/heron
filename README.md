@@ -109,6 +109,8 @@ DEBUG=debug
 
 See `settings.rs` for full available options.
 
+For content admin dropdowns and editor fields, see [Adding a document type](docs/doctypes.md).
+
 ## Project Structure
 
 ```

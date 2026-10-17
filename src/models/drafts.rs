@@ -69,7 +69,7 @@ pub struct NewDraft {
 // READ all
 pub fn _get_drafts(conn: &mut SqliteConnection) -> QueryResult<Vec<Draft>> {
     //drafts::table.load(conn)
-    drafts::table.select(Draft::as_select()).load(conn)
+    drafts::table.filter(drafts::status.ne("deleted")).select(Draft::as_select()).load(conn)
 }
 
 
@@ -80,6 +80,7 @@ pub fn get_drafts_for_user(
 ) -> QueryResult<Vec<Draft>> {
     drafts::table
         .filter(drafts::host_id.eq(in_host_id))
+        .filter(drafts::status.ne("deleted"))
         .filter(drafts::submitted_by.eq(other_user_id))
         .load(conn)
 }
@@ -119,7 +120,7 @@ pub fn get_drafts_filtered(
     conn: &mut SqliteConnection,
     filter: DraftFilter,
 ) -> QueryResult<Vec<Draft>> {
-    let mut q = drafts::table.into_boxed();
+    let mut q = drafts::table.filter(drafts::status.ne("deleted")).into_boxed();
 
     q = q.filter(drafts::host_id.eq(filter.host_id));
 
@@ -203,9 +204,18 @@ pub fn update_draft(
     drafts::table.find(in_draft_id).first(conn)
 }
 
-// DELETE
-pub fn delete_draft(conn: &mut SqliteConnection, in_draft_id: i32) -> QueryResult<usize> {
-    diesel::delete(drafts::table.find(in_draft_id)).execute(conn)
+// Retain deleted drafts for history, scoped to the current host.
+pub fn delete_drafts(
+    conn: &mut SqliteConnection,
+    ids: &[i32],
+    host_id: i32,
+) -> QueryResult<usize> {
+    diesel::update(drafts::table
+        .filter(drafts::id.eq_any(ids))
+        .filter(drafts::host_id.eq(host_id))
+        .filter(drafts::status.ne("deleted")))
+        .set(drafts::status.eq("deleted"))
+        .execute(conn)
 }
 
 use chrono::NaiveDate;
@@ -290,4 +300,40 @@ pub fn deploy_draft(
         .execute(conn)?;
 
     drafts::table.find(draft_id).first(conn)
+}
+
+#[cfg(test)]
+mod deletion_tests {
+    use super::*;
+    use crate::services::draft_service::DraftService;
+    use diesel::connection::SimpleConnection;
+
+    #[test]
+    fn soft_delete_preserves_rows_and_hides_them_from_lists() {
+        let mut conn = SqliteConnection::establish(":memory:").unwrap();
+        conn.batch_execute(include_str!("../../migrations/2026-01-04-170231_drafts/up.sql")).unwrap();
+        conn.batch_execute(include_str!("../../migrations/2026-02-28-153103_addHostIdDraft/up.sql")).unwrap();
+        conn.batch_execute("INSERT INTO drafts (id, doc_type, title, body_md, submitted_by, host_id)
+            VALUES (1, 'recipe', 'Delete me', 'Retained body', 7, 1),
+                   (2, 'recipe', 'Keep me', '', 7, 1),
+                   (3, 'recipe', 'Other host', '', 7, 2),
+                   (4, 'recipe', 'Also delete', '', 7, 1);").unwrap();
+
+        assert_eq!(delete_drafts(&mut conn, &[1, 3, 4, 999], 1).unwrap(), 2);
+        let deleted = get_draft(&mut conn, 1).unwrap();
+        assert_eq!(deleted.status, "deleted");
+        assert_eq!(deleted.body_md, "Retained body");
+        assert_eq!(get_draft(&mut conn, 3).unwrap().status, "draft");
+        assert_eq!(delete_drafts(&mut conn, &[1, 4], 1).unwrap(), 0);
+        assert_eq!(delete_drafts(&mut conn, &[], 1).unwrap(), 0);
+
+        let query: DraftQuery = serde_json::from_value(serde_json::json!({"host_id": 1})).unwrap();
+        let listed = get_drafts_filtered(&mut conn, DraftFilter::from(query)).unwrap();
+        assert_eq!(listed.iter().map(|d| d.id).collect::<Vec<_>>(), vec![2]);
+        let mine = get_drafts_for_user(&mut conn, 7, 1).unwrap();
+        assert_eq!(mine.iter().map(|d| d.id).collect::<Vec<_>>(), vec![2]);
+        let member_list = DraftService::get_draft_list_for_user(&mut conn, 1, 7).unwrap();
+        assert_eq!(member_list.iter().map(|d| d.id).collect::<Vec<_>>(), vec![2]);
+        assert_eq!(_get_drafts(&mut conn).unwrap().len(), 2);
+    }
 }

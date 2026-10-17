@@ -643,6 +643,214 @@
           "required": true
         }
       ]
+    }, 
+    "experiment": {
+      "label": "Experiment",
+      "has_markdown": true,
+      "fields": [
+        {
+          "label": "Title",
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Description",
+          "key": "description",
+          "type": "textarea"
+        },
+        {
+          "label": "Author",
+          "key": "author",
+          "type": "text"
+        },
+        {
+          "label": "Permanent experiment ID",
+          "key": "experiment_id",
+          "type": "text",
+          "storage": "meta",
+          "required": true
+        },
+        {
+          "label": "Experiment progress",
+          "key": "experiment_status",
+          "type": "select",
+          "storage": "meta",
+          "required": true,
+          "options": [
+            {
+              "label": "Planned",
+              "value": "planned"
+            },
+            {
+              "label": "Active",
+              "value": "active"
+            },
+            {
+              "label": "Completed",
+              "value": "completed"
+            },
+            {
+              "label": "Paused",
+              "value": "paused"
+            }
+          ]
+        },
+        {
+          "label": "Question or hypothesis",
+          "key": "question",
+          "type": "textarea",
+          "storage": "meta",
+          "required": true
+        },
+        {
+          "label": "Method",
+          "key": "method",
+          "type": "textarea",
+          "storage": "meta"
+        },
+        {
+          "label": "What will we measure?",
+          "key": "success_criteria",
+          "type": "textarea",
+          "storage": "meta"
+        },
+        {
+          "label": "Location",
+          "key": "location",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Start date",
+          "key": "start_date",
+          "type": "date",
+          "storage": "meta"
+        },
+        {
+          "label": "End date",
+          "key": "end_date",
+          "type": "date",
+          "storage": "meta"
+        },
+        {
+          "label": "Images",
+          "key": "images",
+          "type": "images",
+          "storage": "meta"
+        },
+        {
+          "label": "Body Markdown",
+          "key": "body_md",
+          "type": "markdown",
+          "required": true
+        }
+      ]
+    },
+    "results": {
+      "label": "Results",
+      "has_markdown": true,
+      "fields": [
+        {
+          "label": "Permanent result ID",
+          "key": "result_id",
+          "type": "text",
+          "storage": "meta",
+          "required": true
+        },
+        {
+          "label": "Parent experiment ID",
+          "key": "experiment_id",
+          "type": "text",
+          "storage": "meta",
+          "required": true
+        },
+        {
+          "label": "Observation date",
+          "key": "observed_date",
+          "type": "date",
+          "storage": "meta",
+          "required": true
+        },
+        {
+          "label": "Findings summary",
+          "key": "summary",
+          "type": "textarea",
+          "storage": "meta",
+          "required": true
+        },
+        {
+          "label": "Outcome",
+          "key": "outcome",
+          "type": "select",
+          "storage": "meta",
+          "required": true,
+          "options": [
+            {
+              "label": "Positive",
+              "value": "positive"
+            },
+            {
+              "label": "Mixed",
+              "value": "mixed"
+            },
+            {
+              "label": "Negative",
+              "value": "negative"
+            },
+            {
+              "label": "Inconclusive",
+              "value": "inconclusive"
+            }
+          ]
+        },
+        {
+          "label": "Limitations",
+          "key": "limitations",
+          "type": "textarea",
+          "storage": "meta"
+        },
+        {
+          "label": "Title",
+          "key": "title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "label": "Description",
+          "key": "description",
+          "type": "textarea"
+        },
+        {
+          "label": "Author",
+          "key": "author",
+          "type": "text"
+        },
+        {
+          "label": "Tags",
+          "key": "tags",
+          "type": "text",
+          "storage": "meta"
+        },
+        {
+          "label": "Date",
+          "key": "date",
+          "type": "date",
+          "storage": "meta"
+        },
+        {
+          "label": "Images",
+          "key": "images",
+          "type": "images",
+          "storage": "meta"
+        },
+        {
+          "label": "Body Markdown",
+          "key": "body_md",
+          "type": "markdown",
+          "required": true
+        }
+      ]
     }
   }
 }

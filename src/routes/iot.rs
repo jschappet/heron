@@ -5,6 +5,7 @@ use crate::{
     middleware::host_utils::require_host,
     routes::{RoutePath, register},
 };
+use actix_session::SessionExt;
 use actix_web::{HttpRequest, HttpResponse, Scope, web};
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -248,8 +249,16 @@ pub async fn post_iot(
     }
 }
 
+// Browser viewers use the existing login session; firmware keeps its device token.
+fn authorize_viewer(req: &HttpRequest, data: &AppState) -> Result<(), HttpResponse> {
+    if let Ok(Some(_)) = req.get_session().get::<i32>("user_id") {
+        return Ok(());
+    }
+    authorize(req, data)
+}
+
 pub async fn get_devices(req: HttpRequest, data: web::Data<AppState>) -> HttpResponse {
-    if let Err(response) = authorize(&req, &data) {
+    if let Err(response) = authorize_viewer(&req, &data) {
         return response;
     }
     let host = match require_host(&req).await {
@@ -284,9 +293,9 @@ pub async fn get_metrics(
     query: web::Query<MetricsQuery>,
     data: web::Data<AppState>,
 ) -> HttpResponse {
-    //if let Err(response) = authorize(&req, &data) {
-    //    return response;
-    //}
+    if let Err(response) = authorize_viewer(&req, &data) {
+        return response;
+    }
     let host = match require_host(&req).await {
         Ok(host) => host,
         Err(response) => return response,
@@ -482,6 +491,14 @@ mod tests {
             .unwrap();
             assert_eq!(body["metric_duplicate"], duplicate);
         }
+        // A logged-in browser needs no firmware token for either read route.
+        let viewer = request("");
+        viewer.get_session().insert("user_id", 1_i32).unwrap();
+        assert_eq!(get_devices(viewer.clone(), data.clone()).await.status(), StatusCode::OK);
+        assert_eq!(get_metrics(viewer, web::Path::from("esp32-test".to_string()),
+            web::Query(MetricsQuery { limit: None, before_id: None }), data.clone()).await.status(), StatusCode::OK);
+        assert_eq!(get_metrics(request(""), web::Path::from("esp32-test".to_string()),
+            web::Query(MetricsQuery { limit: None, before_id: None }), data.clone()).await.status(), StatusCode::UNAUTHORIZED);
         let response = get_devices(request("Bearer test-token"), data.clone()).await;
         assert_eq!(response.status(), StatusCode::OK);
         let body: Value = serde_json::from_slice(

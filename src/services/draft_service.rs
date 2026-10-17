@@ -30,6 +30,7 @@ impl DraftService {
     ) -> QueryResult<Vec<DraftListItem>> {
         drafts::table
             .filter(drafts::host_id.eq(host_id))
+            .filter(drafts::status.ne("deleted"))
             .filter(drafts::submitted_by.eq(member_id))
             .select(DraftListItem::as_select())
             .load(conn)
